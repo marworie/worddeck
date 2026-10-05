@@ -4,7 +4,6 @@
 # Words tablosuna ekleyecek seed-words.sql dosyasını üretir.
 # Listeler güncellenirse tekrar çalıştırılabilir.
 # ============================================================
-
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot   # bu betiğin bulunduğu klasör (database)
 
