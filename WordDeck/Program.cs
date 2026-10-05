@@ -42,6 +42,8 @@ builder.Services.AddSwaggerGen(options =>
 // Repository'ler: "biri IUserRepository isterse UserRepository ver"
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
+builder.Services.AddScoped<IStudyRepository, StudyRepository>();
+
 // JWT kimlik doğrulama
 var jwtSecret = builder.Configuration["JwtSecret"]
     ?? throw new InvalidOperationException("JwtSecret bulunamadı.");
