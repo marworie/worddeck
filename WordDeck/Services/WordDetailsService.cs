@@ -1,10 +1,12 @@
 using System.Text.Json;
 using System.Globalization;
+using System.Net;
+using System.Text.RegularExpressions;
 
 namespace WordDeck.Services
 {
     // Bir kelimenin Türkçe anlamını (MyMemory), İngilizce tanımını ve örnek cümlesini
-    // (Free Dictionary) dış API'lerden çeker.
+    // (Wiktionaryy) dış API'lerden çeker.
     public class WordDetailsService
     {
         private readonly IHttpClientFactory _httpClientFactory;
@@ -21,7 +23,7 @@ namespace WordDeck.Services
         public async Task<WordDetailsResult> FetchAsync(string headword, string partOfSpeech)
         {
             var meaningTask = TryAsync(() => FetchTurkishAsync(headword), "MyMemory", headword);
-            var dictTask = TryAsync(() => FetchDefinitionAsync(headword, partOfSpeech), "Free Dictionary", headword);
+            var dictTask = TryAsync(() => FetchDefinitionAsync(headword, partOfSpeech), "Wiktionary", headword);
             await Task.WhenAll(meaningTask, dictTask);
 
             var (meaningOk, meaning) = meaningTask.Result;
@@ -111,33 +113,51 @@ namespace WordDeck.Services
             return !junk.Contains(text.ToLowerInvariant());
         }
 
-        // Free Dictionary: İngilizce tanım ve örnek cümle
+        // Wiktionary: İngilizce tanım ve örnek cümle
         private async Task<(string? Definition, string? Example)> FetchDefinitionAsync(string headword, string partOfSpeech)
         {
             var client = _httpClientFactory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(8);   // site yavaşsa 8 saniyede vazgeç
-            var url = $"https://api.dictionaryapi.dev/api/v2/entries/en/{Uri.EscapeDataString(headword)}";
+            client.Timeout = TimeSpan.FromSeconds(8);
+            // Wikimedia, kimin istek attığını belirten bir User-Agent istiyor
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("WordDeck/1.0 (https://github.com/marworie/worddeck)");
 
-            var response = await client.GetAsync(url);
-            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            // Wiktionary'de sayfa adlarında boşluk yerine alt çizgi kullanılıyor
+            var title = Uri.EscapeDataString(headword.Replace(' ', '_'));
+            var response = await client.GetAsync($"https://en.wiktionary.org/api/rest_v1/page/definition/{title}");
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
                 return (null, null);              // sözlükte yok: hata değil, sadece bilgi yok
             response.EnsureSuccessStatusCode();
 
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
+            // Cevapta dillere göre bölümler var, bize sadece İngilizce ("en") lazım
+            if (!doc.RootElement.TryGetProperty("en", out var english))
+                return (null, null);
+
             // Tüm anlamları tek listede topla: (tür, tanım, örnek)
             var senses = new List<(string Pos, string Definition, string? Example)>();
-            foreach (var entry in doc.RootElement.EnumerateArray())
+            foreach (var section in english.EnumerateArray())
             {
-                foreach (var meaning in entry.GetProperty("meanings").EnumerateArray())
+                string pos = section.TryGetProperty("partOfSpeech", out var p) ? p.GetString() ?? "" : "";
+                if (!section.TryGetProperty("definitions", out var defs)) continue;
+
+                foreach (var def in defs.EnumerateArray())
                 {
-                    string pos = meaning.GetProperty("partOfSpeech").GetString() ?? "";
-                    foreach (var def in meaning.GetProperty("definitions").EnumerateArray())
+                    string text = CleanHtml(def.TryGetProperty("definition", out var d) ? d.GetString() ?? "" : "");
+                    if (text.Length == 0) continue;
+
+                    // Örnekler bir liste halinde geliyor, ilk dolu olanı al
+                    string? exampleText = null;
+                    if (def.TryGetProperty("examples", out var exs) && exs.ValueKind == JsonValueKind.Array)
                     {
-                        string text = def.GetProperty("definition").GetString() ?? "";
-                        string? exampleText = def.TryGetProperty("example", out var ex) ? ex.GetString() : null;
-                        senses.Add((pos, text, exampleText));
+                        exampleText = exs.EnumerateArray()
+                            .Where(e => e.ValueKind == JsonValueKind.String)
+                            .Select(e => CleanHtml(e.GetString() ?? ""))
+                            .FirstOrDefault(e => e.Length > 0);
                     }
+
+                    senses.Add((pos, text, exampleText));
                 }
             }
 
@@ -153,5 +173,12 @@ namespace WordDeck.Services
                 ? (withExample.Definition, withExample.Example)
                 : (pool[0].Definition, null);
         }
+
+        // Wiktionary tanımları HTML içeriyor bunları temizlemek için
+        private static readonly Regex HtmlTags = new("<[^>]+>", RegexOptions.Compiled);
+        private static string CleanHtml(string html) =>
+            WebUtility.HtmlDecode(HtmlTags.Replace(html, "")).Trim();
+
+
     }
 }
