@@ -16,34 +16,45 @@ namespace WordDeck.Services
             _logger = logger;
         }
 
-        // Success = false ise ağ hatası vardır, sonuç kaydedilmemeli (sonra tekrar denensin)
-        public async Task<(bool Success, string? TurkishMeaning, string? Definition, string? Example)>
-            FetchAsync(string headword, string partOfSpeech)
+        // İki kaynağa aynı anda, birbirinden bağımsız istek atar:
+        // biri hata verirse diğerinin sonucu yine kullanılır
+        public async Task<WordDetailsResult> FetchAsync(string headword, string partOfSpeech)
+        {
+            var meaningTask = TryAsync(() => FetchTurkishAsync(headword), "MyMemory", headword);
+            var dictTask = TryAsync(() => FetchDefinitionAsync(headword, partOfSpeech), "Free Dictionary", headword);
+            await Task.WhenAll(meaningTask, dictTask);
+
+            var (meaningOk, meaning) = meaningTask.Result;
+            var (dictOk, dict) = dictTask.Result;
+
+            return new WordDetailsResult(meaningOk && dictOk, meaning, dict.Definition, dict.Example);
+        }
+
+        // Bir isteği çalıştırır; hata olursa uygulamayı çökertmez, loglayıp "başarısız" döner
+        private async Task<(bool Ok, T? Value)> TryAsync<T>(Func<Task<T>> action, string source, string headword)
         {
             try
             {
-                // İki isteği aynı anda gönder, ikisini birden bekle
-                var meaningTask = FetchTurkishAsync(headword);
-                var dictTask = FetchDefinitionAsync(headword, partOfSpeech);
-                await Task.WhenAll(meaningTask, dictTask);
-
-                var (definition, example) = dictTask.Result;
-                return (true, meaningTask.Result, definition, example);
+                return (true, await action());
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Kelime detayları alınamadı: {Word}", headword);
-                return (false, null, null, null);
+                _logger.LogWarning("{Source} hatası ({Word}): {Message}", source, headword, ex.Message);
+                return (false, default);
             }
         }
 
         private static readonly CultureInfo Turkish = new("tr-TR");
+        
+        // Detay çekme sonucu. Complete = false ise kaynaklardan biri hata verdi, sonra tekrar denenmeli
+        public record WordDetailsResult(bool Complete, string? TurkishMeaning, string? Definition, string? Example);
 
         // MyMemory: İngilizce → Türkçe çeviri.
         // Tüm eşleşmelere bakıp tam bu kelimeye ait, en yüksek puanlı, anlamlı çeviriyi seçer.
         private async Task<string?> FetchTurkishAsync(string headword)
         {
             var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(8);   // site yavaşsa 8 saniyede vazgeç
             var url = $"https://api.mymemory.translated.net/get?q={Uri.EscapeDataString(headword)}&langpair=en|tr";
 
             var response = await client.GetAsync(url);
@@ -104,6 +115,7 @@ namespace WordDeck.Services
         private async Task<(string? Definition, string? Example)> FetchDefinitionAsync(string headword, string partOfSpeech)
         {
             var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(8);   // site yavaşsa 8 saniyede vazgeç
             var url = $"https://api.dictionaryapi.dev/api/v2/entries/en/{Uri.EscapeDataString(headword)}";
 
             var response = await client.GetAsync(url);

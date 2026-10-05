@@ -30,13 +30,13 @@ namespace WordDeck.Controllers
             if (word.DetailsFetchedAt == null)
             {
                 var result = await _details.FetchAsync(word.Headword, word.PartOfSpeech);
-                if (result.Success)
-                {
-                    await _words.SaveDetailsAsync(id, result.TurkishMeaning, result.Definition, result.Example);
-                    word.TurkishMeaning = result.TurkishMeaning;
-                    word.Definition = result.Definition;
-                    word.Example = result.Example;
-                }
+
+                // Gelen ne varsa kaydet; ikisi de başarılıysa "tamamlandı" işaretle
+                await _words.SaveDetailsAsync(id, result.TurkishMeaning, result.Definition, result.Example, result.Complete);
+
+                word.TurkishMeaning = result.TurkishMeaning ?? word.TurkishMeaning;
+                word.Definition = result.Definition ?? word.Definition;
+                word.Example = result.Example ?? word.Example;
             }
 
             return Ok(new
