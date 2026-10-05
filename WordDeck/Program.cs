@@ -10,6 +10,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using WordDeck.Middleware;
 using WordDeck.Repositories;
+using WordDeck.Services;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,6 +63,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 builder.Services.AddAuthorization();
+
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IWordRepository, WordRepository>();
+builder.Services.AddScoped<WordDetailsService>();
 
 var app = builder.Build();
 
