@@ -1,0 +1,6 @@
+@WordDeck_HostAddress = http://localhost:5002
+
+GET {{WordDeck_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

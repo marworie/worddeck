@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="WordDeck.Tests/WordDeck.Tests.csproj" />
+  <Project Path="WordDeck/WordDeck.csproj" />
+</Solution>
