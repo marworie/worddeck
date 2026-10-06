@@ -70,6 +70,8 @@ builder.Services.AddScoped<WordDetailsService>();
 builder.Services.AddScoped<IHardRepository, HardRepository>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<WordNetworkService>();
+builder.Services.AddScoped<IQuizRepository, QuizRepository>();
+builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 
 var app = builder.Build();
 

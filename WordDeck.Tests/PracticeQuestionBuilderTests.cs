@@ -47,5 +47,19 @@ namespace WordDeck.Tests
         {
             Assert.Equal(expected, PracticeQuestionBuilder.PickType(state, streak, hasCloze));
         }
+
+        [Fact]
+        public void RastgeleTip_OrnekYoksa_AsalBoslukDoldurmaGelmez()
+        {
+            var rng = new Random(42);   // sabit tohum: test her seferinde aynı sırayla çalışsın
+
+            for (int i = 0; i < 200; i++)
+            {
+                string type = PracticeQuestionBuilder.PickRandomType(hasCloze: false, rng);
+                Assert.NotEqual(QuestionTypes.Cloze, type);
+                Assert.Contains(type, QuestionTypes.All);
+            }
+        }
+
     }
 }

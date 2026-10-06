@@ -8,12 +8,16 @@ import Home from './Home'
 import { useToast } from './ToastContext'
 import StudySession from './StudySession'
 import HardWords from './HardWords'
+import HardPractice from './HardPractice'
+import Quiz from './Quiz'
 
 function App() {
   const showToast = useToast()
   const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('token') !== null)
   const [view, setView] = useState('home')   // 'home' | 'study' | 'settings'
   const [studyLevel, setStudyLevel] = useState(null) // çalışılan seviye
+  const [practiceLevel, setPracticeLevel] = useState(null)   // zor kelime çalışmasının seviyesi
+  const [quizConfig, setQuizConfig] = useState(null)   // { level, count }
 
   function startStudy(level){
     setStudyLevel(level)
@@ -59,14 +63,22 @@ function App() {
       </header>
 
       <main className="app-main">
-        {view === 'home' && <Home onStartStudy={startStudy} onOpenHard={() => setView('hard')} />}
+                {view === 'home' && (
+          <Home
+            onStartStudy={startStudy}
+            onOpenHard={() => setView('hard')}
+            onStartQuiz={(level, count) => { setQuizConfig({ level, count }); setView('quiz') }}
+          />
+        )}
+        {view === 'quiz' && <Quiz level={quizConfig.level} count={quizConfig.count} onExit={() => setView('home')} />}
         {view === 'study' && <StudySession level={studyLevel} onExit={() => setView('home')} />}
         {view === 'hard' && (
           <HardWords
             onBack={() => setView('home')}
-            onStartPractice={(level) => showToast(`${level} çalışması bir sonraki adımda 🙂`)}
+            onStartPractice={(level) => { setPracticeLevel(level); setView('hardPractice') }}
           />
         )}
+        {view === 'hardPractice' && <HardPractice level={practiceLevel} onExit={() => setView('hard')} />}
         {view === 'settings' && <p>Ayarlar yakında 🙂</p>}
       </main>
     </>

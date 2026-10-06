@@ -8,6 +8,8 @@
 
 import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
+import { useSpeechRecognition } from './useSpeechRecognition'
+import { checkSpoken } from './answerCheck'
 
 // card: oturumdan gelen kart, flipped: arka yüz mü görünüyor, onFlip: çevirme
 function Flashcard({ card, flipped, onFlip }) {
@@ -24,6 +26,8 @@ function Flashcard({ card, flipped, onFlip }) {
   )
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState('')
+  const { supported: micSupported, listening, listen } = useSpeechRecognition()
+  const [speechResult, setSpeechResult] = useState(null)   // { ok, heard }
 
   // Kart ekrana gelir gelmez detayları çek (veritabanında hazırsa anında gelir)
   useEffect(() => {
@@ -40,6 +44,18 @@ function Flashcard({ card, flipped, onFlip }) {
     utterance.rate = 0.9
     window.speechSynthesis.cancel()   // önceki okuma sürüyorsa kes
     window.speechSynthesis.speak(utterance)
+  }
+
+  // 🎤 Kelimeyi söyle, tarayıcı doğru anlıyor mu bak
+  async function checkPronunciation(e) {
+    e.stopPropagation()   // kart dönmesin
+    setSpeechResult(null)
+    try {
+      const alternatives = await listen()
+      setSpeechResult({ ok: checkSpoken(alternatives, card.headword), heard: alternatives[0] ?? '' })
+    } catch {
+      setSpeechResult({ ok: false, heard: '' })
+    }
   }
 
     // ✏️ Düzelt: düzenleme kutusunu mevcut anlamla aç
@@ -76,7 +92,26 @@ function Flashcard({ card, flipped, onFlip }) {
           <h2 className="flashcard-word">{card.headword}</h2>
           <p className="flashcard-pos">{card.partOfSpeech}</p>
 
-          <button className="speak-btn" onClick={speak} title="Telaffuzu dinle">🔊</button>
+          <div className="front-buttons">
+            <button className="speak-btn" onClick={speak} title="Telaffuzu dinle">🔊</button>
+            {micSupported && (
+              <button
+                className={`speak-btn ${listening ? 'listening' : ''}`}
+                onClick={checkPronunciation}
+                title="Kelimeyi söyle"
+                disabled={listening}
+              >
+                🎤
+              </button>
+            )}
+          </div>
+          {speechResult && (
+            <p className={`speech-result ${speechResult.ok ? 'ok' : 'fail'}`}>
+              {speechResult.ok
+                ? '✓ Doğru!'
+                : speechResult.heard ? `✗ Şunu duydum: "${speechResult.heard}"` : 'Duyamadım, tekrar dene'}
+            </p>
+          )}
           <p className="flashcard-hint">Çevirmek için dokun</p>
         </div>
 

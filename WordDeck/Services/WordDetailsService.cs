@@ -127,11 +127,13 @@ namespace WordDeck.Services
             ThrowIfQuotaExceeded(main);
             if (main != null) candidates.Add((main, 2.0));
 
-            // Puana göre sırala, aynı anlamları tekrarlama, en fazla 3 tane al
+            // Önce HTML etiketlerini temizle (<g id="1">kravat</g> → kravat), sonra çöpleri ele,
+            // puana göre sırala, tekrarları sil, en fazla 3 tane al
             var meanings = candidates
+                .Select(c => (Text: CleanHtml(c.Text), c.Score))
                 .Where(c => IsUsableTranslation(c.Text, headword) && IsUsableTranslation(c.Text, query))
                 .OrderByDescending(c => c.Score)
-                .Select(c => c.Text.Trim().TrimEnd('.').ToLower(Turkish))   // Türkçe kurallarıyla küçült
+                .Select(c => c.Text.Trim().TrimEnd('.').ToLower(Turkish))
                 .Distinct()
                 .Take(3)
                 .ToList();

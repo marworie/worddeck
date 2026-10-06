@@ -731,3 +731,160 @@ button {
   align-self: flex-start;
   padding-left: 0;
 }
+
+/* ============================================================
+   ZOR KELİME ÇALIŞMASI
+   ============================================================ */
+.q-type-tag {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: #e0f2fe;
+  color: var(--primary-dark);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.q-card { display: flex; flex-direction: column; gap: 14px; min-height: 320px; }
+.q-instruction { margin: 0; font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.q-prompt { display: flex; flex-direction: column; gap: 6px; }
+.q-meaning { margin: 0; font-size: 26px; font-weight: 800; color: var(--primary-dark); }
+.q-definition { margin: 0; color: var(--muted); line-height: 1.5; }
+
+/* Çoktan seçmeli */
+.q-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.q-choice {
+  padding: 16px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  font-size: 17px;
+  font-weight: 600;
+  transition: border-color 0.15s, background 0.15s;
+}
+.q-choice:hover:not(:disabled) { border-color: var(--primary); }
+.q-choice.correct { border-color: var(--success); background: #d1fae5; }
+.q-choice.wrong { border-color: var(--danger); background: #fee2e2; }
+
+/* Boşluk doldurma */
+.q-cloze { margin: 0; font-size: 22px; line-height: 1.5; font-style: italic; }
+.q-small-hint { margin: 0; color: var(--muted); font-size: 14px; }
+
+/* Yazma alanı */
+.q-answer { display: flex; flex-direction: column; gap: 8px; }
+.q-input-row { display: flex; gap: 8px; }
+.q-input-row input {
+  flex: 1;
+  padding: 12px 14px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  font-size: 18px;
+  outline: none;
+}
+.q-input-row input:focus { border-color: var(--primary); }
+.q-hint { margin: 0; font-family: monospace; font-size: 20px; letter-spacing: 2px; color: var(--primary-dark); }
+.q-hint-btn { align-self: flex-start; padding-left: 0; }
+
+/* Dinleme ve söyleme */
+.q-listen-btn, .q-mic-btn {
+  align-self: center;
+  padding: 18px 28px;
+  border: none;
+  border-radius: 50px;
+  background: var(--gradient);
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+}
+.q-mic-btn.listening { animation: pulse 1s infinite; }
+.q-error { margin: 0; color: var(--danger); text-align: center; }
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.5); }
+  50%      { box-shadow: 0 0 0 14px rgba(14, 165, 233, 0); }
+}
+
+/* Geri bildirim */
+.q-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 12px;
+  animation: toast-in 0.2s ease;
+}
+.q-feedback.ok { background: #ecfdf5; border-left: 5px solid var(--success); }
+.q-feedback.fail { background: #fef2f2; border-left: 5px solid var(--danger); }
+.q-feedback p { margin: 0; }
+.q-feedback-title { font-weight: 800; font-size: 17px; }
+.q-correct-answer { font-size: 18px; }
+.q-state-change { font-size: 14px; }
+.q-next-btn { align-self: flex-end; }
+
+.promoted-list { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 12px 0; }
+
+/* Ana karttaki mikrofon */
+.front-buttons { display: flex; gap: 10px; }
+.speak-btn.listening { animation: pulse 1s infinite; }
+.speech-result { margin: 10px 0 0; font-size: 14px; font-weight: 600; }
+.speech-result.ok { color: var(--success); }
+.speech-result.fail { color: var(--danger); }
+
+@media (max-width: 768px) {
+  .q-choices { grid-template-columns: 1fr; }
+  .q-meaning { font-size: 22px; }
+  .q-input-row { flex-direction: column; }
+}
+
+/* ============================================================
+   SINAV
+   ============================================================ */
+.quiz-card { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; border-left: 5px solid var(--primary); }
+.quiz-card-head h3 { margin: 0 0 4px; }
+.quiz-card-head p { margin: 0; font-size: 14px; }
+.quiz-options { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px; }
+.quiz-option-group { display: flex; flex-direction: column; gap: 6px; }
+.chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.quiz-start-btn { margin-left: auto; }
+
+.quiz-history { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 1px solid var(--border); }
+.quiz-history-row { display: grid; grid-template-columns: auto 60px 50px 1fr; align-items: center; gap: 12px; font-size: 14px; }
+.quiz-pct { font-weight: 700; }
+.quiz-pct.good { color: var(--success); }
+.quiz-pct.mid { color: #b45309; }
+.quiz-pct.low { color: var(--danger); }
+
+.quiz-meta { display: flex; gap: 14px; font-weight: 700; color: var(--muted); }
+.quiz-score { color: var(--success); }
+.align-start { align-self: flex-start; }
+
+.quiz-flash {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-weight: 600;
+  animation: toast-in 0.2s ease;
+}
+.quiz-flash.ok { background: #ecfdf5; color: #047857; }
+.quiz-flash.fail { background: #fef2f2; color: #b91c1c; }
+
+.quiz-result { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.quiz-mistakes { width: 100%; max-width: 440px; margin: 16px 0; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.quiz-mistake-row {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #fef2f2;
+}
+.q-type-tag.small { font-size: 11px; padding: 2px 8px; }
+
+@media (max-width: 768px) {
+  .quiz-start-btn { margin-left: 0; width: 100%; }
+  .quiz-mistake-row { grid-template-columns: 1fr; gap: 2px; }
+}

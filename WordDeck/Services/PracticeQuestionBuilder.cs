@@ -48,5 +48,20 @@ namespace WordDeck.Services
 
             return regex.Replace(example, "_____", 1);   // sadece ilk geçtiği yeri boşalt
         }
+
+        // Sınav için rastgele soru tipi. Çoktan seçmeli iki kat şanslı: sınav çok zor olmasın.
+        // Boşluk doldurma sadece örnek cümle varsa. rng: testte sabit sonuç alabilmek için dışarıdan verilebilir
+        public static string PickRandomType(bool hasCloze, Random? rng = null)
+        {
+            rng ??= Random.Shared;
+            var types = new List<string>
+            {
+                QuestionTypes.Choice, QuestionTypes.Choice,
+                QuestionTypes.Typing, QuestionTypes.Listening, QuestionTypes.Speaking
+            };
+            if (hasCloze) types.Add(QuestionTypes.Cloze);
+
+            return types[rng.Next(types.Count)];
+        }
     }
 }

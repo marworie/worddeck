@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
+import QuizCard from './QuizCard'
 
 // Seviyelerin kısa açıklamaları
 const LEVEL_INFO = {
@@ -15,7 +16,7 @@ const LEVEL_INFO = {
 }
 
 // onStartStudy: seviye seçilince App'e haber vermek için
-function Home({ onStartStudy, onOpenHard }) {
+function Home({ onStartStudy, onOpenHard, onStartQuiz }) {
   const [progress, setProgress] = useState(null)   // null = yükleniyor
   const [hardInsights, setHardInsights] = useState(null)
 
@@ -62,6 +63,8 @@ function Home({ onStartStudy, onOpenHard }) {
           </div>
         </div>
       )}
+      
+      <QuizCard onStart={onStartQuiz} />
 
       {/* Seviye kartları */}
       <div className="level-grid">
