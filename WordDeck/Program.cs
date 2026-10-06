@@ -67,6 +67,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IWordRepository, WordRepository>();
 builder.Services.AddScoped<WordDetailsService>();
+builder.Services.AddScoped<IHardRepository, HardRepository>();
 
 var app = builder.Build();
 

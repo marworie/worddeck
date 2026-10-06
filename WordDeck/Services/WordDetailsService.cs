@@ -225,8 +225,9 @@ namespace WordDeck.Services
             var matching = senses.Where(s => s.Pos.Equals(partOfSpeech, StringComparison.OrdinalIgnoreCase)).ToList();
             var pool = matching.Count > 0 ? matching : senses;
 
-            // Örnek cümlesi olan anlamı tercih et: tanım ve örnek aynı anlama ait olsun
-            var withExample = pool.FirstOrDefault(s => !string.IsNullOrWhiteSpace(s.Example));
+                        // Wiktionary'de en yaygın anlamlar en üstte. Sadece ilk 3 anlam içinde örneği olanı tercih et,
+            // yoksa çok aşağıdaki nadir bir anlamı seçmek yerine en üstteki anlamı al
+            var withExample = pool.Take(3).FirstOrDefault(s => !string.IsNullOrWhiteSpace(s.Example));
             return withExample.Definition != null
                 ? (withExample.Definition, withExample.Example)
                 : (pool[0].Definition, null);
