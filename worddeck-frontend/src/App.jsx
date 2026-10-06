@@ -7,6 +7,7 @@ import Login from './Login'
 import Home from './Home'
 import { useToast } from './ToastContext'
 import StudySession from './StudySession'
+import HardWords from './HardWords'
 
 function App() {
   const showToast = useToast()
@@ -42,7 +43,7 @@ function App() {
     }
   }, [showToast])
 
-  if (!isLoggedIn) {
+  if (!isLoggedIn) { 
     return <Login onLoginSuccess={() => setIsLoggedIn(true)} />
   }
 
@@ -58,9 +59,15 @@ function App() {
       </header>
 
       <main className="app-main">
-        {view === 'home' && <Home onStartStudy={startStudy}/>}
-        {view === 'study' && <StudySession level={studyLevel} onExit={() => setView('home')}/>}
-        {view === 'settings' && <p>Ayarlar</p>}
+        {view === 'home' && <Home onStartStudy={startStudy} onOpenHard={() => setView('hard')} />}
+        {view === 'study' && <StudySession level={studyLevel} onExit={() => setView('home')} />}
+        {view === 'hard' && (
+          <HardWords
+            onBack={() => setView('home')}
+            onStartPractice={(level) => showToast(`${level} çalışması bir sonraki adımda 🙂`)}
+          />
+        )}
+        {view === 'settings' && <p>Ayarlar yakında 🙂</p>}
       </main>
     </>
   )

@@ -15,8 +15,13 @@ const LEVEL_INFO = {
 }
 
 // onStartStudy: seviye seçilince App'e haber vermek için
-function Home({ onStartStudy }) {
+function Home({ onStartStudy, onOpenHard }) {
   const [progress, setProgress] = useState(null)   // null = yükleniyor
+  const [hardInsights, setHardInsights] = useState(null)
+
+  apiFetch('/api/Hard/insights')
+    .then(res => res.ok ? res.json() : null)
+    .then(data => setHardInsights(data))
 
   useEffect(() => {
     apiFetch('/api/Study/progress')
@@ -42,6 +47,21 @@ function Home({ onStartStudy }) {
           <span className="streak-label">gün</span>
         </div>
       </div>
+
+      {/* Zorlandıklarım kısayolu: en az bir zor kelime varsa görünsün */}
+      {hardInsights && hardInsights.hardCount + hardInsights.strengtheningCount + hardInsights.masteredCount > 0 && (
+        <div className="hard-shortcut panel" onClick={onOpenHard}>
+          <div>
+            <h3>Zorlandıklarım</h3>
+            <p className="muted">Bilemediğin kelimeleri farklı soru tipleriyle çalış</p>
+          </div>
+          <div className="hard-shortcut-counts">
+            <span className="state-tag state-hard">{hardInsights.hardCount} zor</span>
+            <span className="state-tag state-strengthening">{hardInsights.strengtheningCount} güçleniyor</span>
+            <span className="state-tag state-mastered">{hardInsights.masteredCount} ustalaşıldı</span>
+          </div>
+        </div>
+      )}
 
       {/* Seviye kartları */}
       <div className="level-grid">
