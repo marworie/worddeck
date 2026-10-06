@@ -1,26 +1,35 @@
+// ============================================================
 // Flashcard.jsx
 // Tek bir kelime kartı. Ön yüz: kelime, tür, seviye, telaffuz.
-// Arka yüz: Türkçe anlam, İngilizce tanım, örnek cümle.
+// Arka yüz: Türkçe anlam, İngilizce tanım (+ Türkçesi), örnek cümle.
 // Dokununca 3D dönme animasyonuyla çevrilir.
-// Detaylar (anlam/tanım) kart ekrana gelince arka planda çekilir.
+// Detaylar kart ekrana gelince arka planda çekilir.
+// ============================================================
 
 import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
 
 // card: oturumdan gelen kart, flipped: arka yüz mü görünüyor, onFlip: çevirme
 function Flashcard({ card, flipped, onFlip }) {
-// oturumdan gelen kartta bilgiler zaten varsa önceden çekilmişse direkt göster 
+  // Oturumdan gelen kartta bilgiler zaten varsa (önceden çekilmişse) direkt göster, "Yükleniyor" deme
   const [details, setDetails] = useState(() =>
     card.turkishMeaning || card.definition
-      ? { turkishMeaning: card.turkishMeaning, definition: card.definition, example: card.example }
+      ? {
+          turkishMeaning: card.turkishMeaning,
+          definition: card.definition,
+          definitionTr: card.definitionTr,
+          example: card.example
+        }
       : null
   )
+  const [isEditing, setIsEditing] = useState(false)
+  const [editValue, setEditValue] = useState('')
 
-  // Kart ekrana gelir gelmez detayları çek; kullanıcı çevirene kadar genelde hazır olur
+  // Kart ekrana gelir gelmez detayları çek (veritabanında hazırsa anında gelir)
   useEffect(() => {
     apiFetch(`/api/Words/${card.wordId}/details`)
-      .then(res => res.ok ? res.json() : {})
-      .then(data => setDetails(data))
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (data) setDetails(data) })
   }, [card.wordId])
 
   // Tarayıcının kendi seslendirme özelliği (ücretsiz, internet gerekmez)
@@ -31,6 +40,26 @@ function Flashcard({ card, flipped, onFlip }) {
     utterance.rate = 0.9
     window.speechSynthesis.cancel()   // önceki okuma sürüyorsa kes
     window.speechSynthesis.speak(utterance)
+  }
+
+    // ✏️ Düzelt: düzenleme kutusunu mevcut anlamla aç
+  function startEdit(e) {
+    e.stopPropagation()   // kart dönmesin
+    setEditValue(details?.turkishMeaning || '')
+    setIsEditing(true)
+  }
+
+  async function saveMeaning(e) {
+    e.preventDefault()
+    const response = await apiFetch(`/api/Words/${card.wordId}/meaning`, {
+      method: 'PUT',
+      body: JSON.stringify({ meaning: editValue })
+    })
+    if (response.ok) {
+      const data = await response.json()
+      setDetails(prev => ({ ...prev, ...data }))
+      setIsEditing(false)
+    }
   }
 
   return (
@@ -64,12 +93,38 @@ function Flashcard({ card, flipped, onFlip }) {
             <>
               <div className="detail-row">
                 <span className="lang-chip tr">TR</span>
-                <p className="tr-meaning">{details.turkishMeaning || '—'}</p>
+                {isEditing ? (
+                  // Düzenleme formu: içine tıklamak kartı çevirmesin
+                  <form className="meaning-edit" onSubmit={saveMeaning} onClick={(e) => e.stopPropagation()}>
+                    <input
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      maxLength={300}
+                      placeholder="Boş bırakırsan otomatik çeviri kullanılır"
+                      autoFocus
+                    />
+                    <button type="submit" className="btn btn-primary">Kaydet</button>
+                    <button type="button" className="btn btn-ghost" onClick={() => setIsEditing(false)}>Vazgeç</button>
+                  </form>
+                ) : (
+                  <>
+                    <p className="tr-meaning">
+                      {details.turkishMeaning || '—'}
+                      {details.isCustomMeaning && <span className="custom-tag">senin</span>}
+                    </p>
+                    <button className="edit-meaning-btn" onClick={startEdit} title="Anlamı düzelt">✏️</button>
+                  </>
+                )}
               </div>
+
               <div className="detail-row">
                 <span className="lang-chip en">EN</span>
-                <p>{details.definition || 'Tanım bulunamadı.'}</p>
+                <div>
+                  <p>{details.definition || 'Tanım bulunamadı.'}</p>
+                  {details.definitionTr && <p className="definition-tr">{details.definitionTr}</p>}
+                </div>
               </div>
+
               {details.example && (
                 <div className="detail-row">
                   <span className="detail-icon">💬</span>

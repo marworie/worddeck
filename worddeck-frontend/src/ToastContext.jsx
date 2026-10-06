@@ -1,8 +1,6 @@
-// ============================================================
 // ToastContext.jsx
 // Uygulamanın her yerinden kısa bildirim (toast) göstermek için.
 // Kullanım: const showToast = useToast(); showToast('Kaydedildi!')
-// ============================================================
 
 import { createContext, useCallback, useContext, useState } from 'react'
 

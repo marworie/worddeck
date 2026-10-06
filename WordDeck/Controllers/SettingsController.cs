@@ -4,9 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 using WordDeck.Dtos;
 using WordDeck.Repositories;
 
+// Kullanıcı ayarları (şimdilik: oturum başına yeni kelime sayısı)
+
 namespace WordDeck.Controllers
 {
-    // Kullanıcı ayarları (şimdilik: oturum başına yeni kelime sayısı)
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]

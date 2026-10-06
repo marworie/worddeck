@@ -20,6 +20,7 @@ CREATE TABLE Words (
     Level CHAR(2) NOT NULL CHECK (Level IN ('A1','A2','B1','B2','C1')),
     TurkishMeaning NVARCHAR(300) NULL,            -- ilk açılışta çeviri API'sinden doldurulacak
     Definition NVARCHAR(1000) NULL,               -- ilk açılışta sözlük API'sinden
+    DefinitionTr NVARCHAR(1000) NULL,             -- ingilizce tanımın türkçe çevirisi
     Example NVARCHAR(1000) NULL,
     DetailsFetchedAt DATETIME2 NULL,              -- bilgiler çekildi mi, ne zaman
     CONSTRAINT UQ_Words_Headword_Pos UNIQUE (Headword, PartOfSpeech)

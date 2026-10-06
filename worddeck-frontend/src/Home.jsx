@@ -1,8 +1,6 @@
-// ============================================================
 // Home.jsx
 // Ana sayfa: seri (streak) ve her seviyenin ilerlemesi.
 // Bir seviyenin "Çalış" butonuna basınca o seviyenin oturumu başlar.
-// ============================================================
 
 import { useEffect, useState } from 'react'
 import { apiFetch } from './api'

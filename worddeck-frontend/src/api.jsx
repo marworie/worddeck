@@ -1,8 +1,6 @@
-// ============================================================
 // api.js
-// Tüm API isteklerinin geçtiği tek nokta:
-// token'ı ekler, hataları uygulamaya bildirir, oturum düşünce haber verir.
-// ============================================================
+// tüm api isteklerinin geçtiği tek nokta
+// tokenı ekler, hataları uygulamaya bildirir, oturum düşünce haber verir
 
 function notify(eventName, detail) {
   window.dispatchEvent(new CustomEvent(eventName, { detail }))
@@ -25,7 +23,7 @@ export async function apiFetch(url, options = {}) {
     throw err
   }
 
-  // 401: token yok ya da süresi dolmuş → App kullanıcıyı giriş ekranına göndersin
+  // 401: token yok ya da süresi dolmuşapp kullanıcıyı giriş ekranına göndersin
   if (response.status === 401 && token) {
     notify('auth-expired')
   }
@@ -36,7 +34,7 @@ export async function apiFetch(url, options = {}) {
     notify('api-error', body?.message ?? 'Sunucuda bir hata oluştu.')
   }
 
-  // 400 + errors: doğrulama hatası → ilk mesajı göster
+  // 400+: doğrulama hatası -> ilk mesajı göster
   if (response.status === 400) {
     const body = await response.clone().json().catch(() => null)
     if (body?.errors) {

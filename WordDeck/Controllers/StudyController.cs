@@ -5,9 +5,10 @@ using WordDeck.Dtos;
 using WordDeck.Repositories;
 using WordDeck.Services;
 
+// Çalışma oturumu, cevap kaydetme ve ilerleme
+
 namespace WordDeck.Controllers
 {
-    // Çalışma oturumu, cevap kaydetme ve ilerleme
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]

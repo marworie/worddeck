@@ -7,9 +7,10 @@ using WordDeck.Dtos;
 using WordDeck.Models;
 using WordDeck.Repositories;
 
+// Kayıt ol ve giriş yap 
+
 namespace WordDeck.Controllers
 {
-    // Kayıt ol ve giriş yap
     [Route("api/[controller]")]
     [ApiController]
     public class AuthController : ControllerBase

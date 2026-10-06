@@ -9,7 +9,8 @@ namespace WordDeck.Models
         public string Level { get; set; } = string.Empty;
         public string? TurkishMeaning { get; set; }
         public string? Definition { get; set; }
+        public string? DefinitionTr { get; set; }         // İngilizce tanımın Türkçe çevirisi
         public string? Example { get; set; }
-        public DateTime? DetailsFetchedAt { get; set; }   // null = bilgiler henüz çekilmedi
+        public DateTime? DetailsFetchedAt { get; set; }   // null = bilgiler henüz (tam) çekilmedi
     }
 }

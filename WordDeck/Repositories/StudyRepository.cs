@@ -22,7 +22,7 @@ namespace WordDeck.Repositories
             QueryAsync<StudyCardDto>(
                 @"SELECT TOP 50 w.Id AS WordId, w.Headword, w.PartOfSpeech, w.Level,
                          COALESCE(uw.CustomMeaning, w.TurkishMeaning) AS TurkishMeaning,
-                         w.Definition, w.Example,
+                         w.Definition, w.DefinitionTr, w.Example,
                          CAST(uw.Box AS INT) AS Box, CAST(0 AS BIT) AS IsNew
                   FROM UserWords uw
                   INNER JOIN Words w ON w.Id = uw.WordId
@@ -35,7 +35,7 @@ namespace WordDeck.Repositories
         public Task<IEnumerable<StudyCardDto>> GetNewCardsAsync(int userId, string level, int count) =>
             QueryAsync<StudyCardDto>(
                 @"SELECT TOP (@Count) w.Id AS WordId, w.Headword, w.PartOfSpeech, w.Level,
-                         w.TurkishMeaning, w.Definition, w.Example,
+                         w.TurkishMeaning, w.Definition, w.DefinitionTr, w.Example,
                          CAST(NULL AS INT) AS Box, CAST(1 AS BIT) AS IsNew
                   FROM Words w
                   WHERE w.Level = @Level
@@ -52,17 +52,25 @@ namespace WordDeck.Repositories
                 "SELECT CAST(Box AS INT) FROM UserWords WHERE UserId = @UserId AND WordId = @WordId",
                 new { UserId = userId, WordId = wordId });
 
-        // Cevabı kaydet: kart varsa güncelle, yoksa ekle (upsert) + bugünün çalışma sayısını artır
+        // Cevabı kaydet: kart varsa güncelle, yoksa ekle (upsert) + bugünün çalışma sayısını artır.
+        // "Bilmiyorum" denirse kelime zor listesine (🔴) düşer, zor kelime serisi sıfırlanır.
         public Task SaveAnswerAsync(int userId, int wordId, int newBox, DateTime nextReviewDate, bool known, DateTime today) =>
             ExecuteAsync(
                 @"UPDATE UserWords
                   SET Box = @Box, NextReviewDate = @Next, LastReviewedAt = SYSDATETIME(),
-                      CorrectCount = CorrectCount + @Correct, WrongCount = WrongCount + @Wrong
+                      CorrectCount = CorrectCount + @Correct, WrongCount = WrongCount + @Wrong,
+                      HardState      = CASE WHEN @Wrong = 1 THEN 1     ELSE HardState END,
+                      HardStreak     = CASE WHEN @Wrong = 1 THEN 0     ELSE HardStreak END,
+                      HardStateSince = CASE WHEN @Wrong = 1 THEN @Today ELSE HardStateSince END,
+                      HardNextCheck  = CASE WHEN @Wrong = 1 THEN NULL  ELSE HardNextCheck END
                   WHERE UserId = @UserId AND WordId = @WordId;
 
                   IF @@ROWCOUNT = 0   -- güncellenecek satır yoksa ilk kez çalışılıyor demektir
-                      INSERT INTO UserWords (UserId, WordId, Box, NextReviewDate, LastReviewedAt, CorrectCount, WrongCount)
-                      VALUES (@UserId, @WordId, @Box, @Next, SYSDATETIME(), @Correct, @Wrong);
+                      INSERT INTO UserWords (UserId, WordId, Box, NextReviewDate, LastReviewedAt,
+                                             CorrectCount, WrongCount, HardState, HardStateSince)
+                      VALUES (@UserId, @WordId, @Box, @Next, SYSDATETIME(), @Correct, @Wrong,
+                              @Wrong,                                       -- bilemediyse 1 (zor), bildiyse 0
+                              CASE WHEN @Wrong = 1 THEN @Today ELSE NULL END);
 
                   UPDATE StudyDays SET CardsReviewed = CardsReviewed + 1
                   WHERE UserId = @UserId AND StudyDate = @Today;

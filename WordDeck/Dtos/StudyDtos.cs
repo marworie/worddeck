@@ -11,6 +11,7 @@ namespace WordDeck.Dtos
         public string Level { get; set; } = string.Empty;
         public string? TurkishMeaning { get; set; }   // kullanıcı düzelttiyse onunki, yoksa genel çeviri
         public string? Definition { get; set; }
+        public string? DefinitionTr { get; set; }         // İngilizce tanımın Türkçe çevirisi
         public string? Example { get; set; }
         public int? Box { get; set; }                 // yeni kelimede null
         public bool IsNew { get; set; }
@@ -52,5 +53,11 @@ namespace WordDeck.Dtos
     public static class Levels
     {
         public static readonly string[] All = { "A1", "A2", "B1", "B2", "C1" };
+    }
+    // Kullanıcının bir kelimeye yazdığı kendi Türkçe anlamı (boş = otomatik çeviriye dön)
+    public class MeaningDto
+    {
+        [MaxLength(300, ErrorMessage = "Anlam en fazla 300 karakter olabilir.")]
+        public string? Meaning { get; set; }
     }
 }

@@ -1,8 +1,6 @@
-// ============================================================
 // App.jsx
 // Giriş durumunu ve hangi sayfanın açık olduğunu yönetir.
-// API hatalarını toast olarak gösterir, oturum düşünce giriş ekranına döner.
-// ============================================================
+// API hatalarını toast olarak gösterir oturum düşerse giriş ekranına döner.
 
 import { useEffect, useState } from 'react'
 import Login from './Login'
@@ -48,6 +46,7 @@ function App() {
     return <Login onLoginSuccess={() => setIsLoggedIn(true)} />
   }
 
+  // Giriş yapılmış, ana uygulama
   return (
     <>
       <header className="app-header">

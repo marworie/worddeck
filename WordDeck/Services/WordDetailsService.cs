@@ -1,35 +1,56 @@
-using System.Text.Json;
 using System.Globalization;
 using System.Net;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace WordDeck.Services
 {
-    // Bir kelimenin Türkçe anlamını (MyMemory), İngilizce tanımını ve örnek cümlesini
-    // (Wiktionaryy) dış API'lerden çeker.
+    // Detay çekme sonucu. Complete = false ise kaynaklardan biri hata verdi, sonra tekrar denenmeli
+    public record WordDetailsResult(bool Complete, string? TurkishMeaning, string? Definition, string? DefinitionTr, string? Example);
+
+    // Bir kelimenin Türkçe anlamını (MyMemory), İngilizce tanımını ve örnek cümlesini (Wiktionary)
+    // dış API'lerden çeker; tanımın Türkçe çevirisini de MyMemory'den alır.
     public class WordDetailsService
     {
+        private static readonly CultureInfo Turkish = new("tr-TR");
+
+        // <style>...</style> ve <script>...</script> bloklarını içerikleriyle birlikte sil
+        private static readonly Regex StyleBlocks = new("<(style|script)[^>]*>.*?</\\1>",
+            RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
+        // Kalan HTML etiketlerini (<a>, <i> gibi) sil, içlerindeki yazı kalsın
+        private static readonly Regex HtmlTags = new("<[^>]+>", RegexOptions.Compiled);
+
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<WordDetailsService> _logger;
+        private readonly string? _myMemoryEmail;   // varsa günlük çeviri sınırı 5 bin → 50 bin karakter
 
-        public WordDetailsService(IHttpClientFactory httpClientFactory, ILogger<WordDetailsService> logger)
+        public WordDetailsService(IHttpClientFactory httpClientFactory, ILogger<WordDetailsService> logger, IConfiguration configuration)
         {
             _httpClientFactory = httpClientFactory;
             _logger = logger;
+            _myMemoryEmail = configuration["MyMemoryEmail"];
         }
 
-        // İki kaynağa aynı anda, birbirinden bağımsız istek atar:
-        // biri hata verirse diğerinin sonucu yine kullanılır
+        // Kelime çevirisi ve sözlük aynı anda, birbirinden bağımsız çekilir;
+        // tanım gelirse onun Türkçesi de çevrilir
         public async Task<WordDetailsResult> FetchAsync(string headword, string partOfSpeech)
         {
-            var meaningTask = TryAsync(() => FetchTurkishAsync(headword), "MyMemory", headword);
-            var dictTask = TryAsync(() => FetchDefinitionAsync(headword, partOfSpeech), "Wiktionary", headword);
+            var meaningTask = TryAsync(() => FetchTurkishAsync(headword, partOfSpeech), "MyMemory", headword);            var dictTask = TryAsync(() => FetchDefinitionAsync(headword, partOfSpeech), "Wiktionary", headword);
             await Task.WhenAll(meaningTask, dictTask);
 
             var (meaningOk, meaning) = meaningTask.Result;
             var (dictOk, dict) = dictTask.Result;
 
-            return new WordDetailsResult(meaningOk && dictOk, meaning, dict.Definition, dict.Example);
+            // Tanımı çevirmek için önce tanımın gelmesi lazım, o yüzden bu adım sırayla
+            bool defTrOk = true;
+            string? definitionTr = null;
+            if (dict.Definition != null)
+            {
+                (defTrOk, definitionTr) = await TryAsync(() => TranslateSentenceAsync(dict.Definition), "MyMemory (tanım)", headword);
+            }
+
+            return new WordDetailsResult(meaningOk && dictOk && defTrOk, meaning, dict.Definition, definitionTr, dict.Example);
         }
 
         // Bir isteği çalıştırır; hata olursa uygulamayı çökertmez, loglayıp "başarısız" döner
@@ -46,28 +67,44 @@ namespace WordDeck.Services
             }
         }
 
-        private static readonly CultureInfo Turkish = new("tr-TR");
-        
-        // Detay çekme sonucu. Complete = false ise kaynaklardan biri hata verdi, sonra tekrar denenmeli
-        public record WordDetailsResult(bool Complete, string? TurkishMeaning, string? Definition, string? Example);
+        // ============ MyMemory (çeviri) ============
 
-        // MyMemory: İngilizce → Türkçe çeviri.
-        // Tüm eşleşmelere bakıp tam bu kelimeye ait, en yüksek puanlı, anlamlı çeviriyi seçer.
-        private async Task<string?> FetchTurkishAsync(string headword)
+        // MyMemory adresi: e-posta tanımlıysa ekle (günlük sınır artsın)
+        private string BuildMyMemoryUrl(string text)
         {
-            var client = _httpClientFactory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(8);   // site yavaşsa 8 saniyede vazgeç
-            var url = $"https://api.mymemory.translated.net/get?q={Uri.EscapeDataString(headword)}&langpair=en|tr";
+            var url = $"https://api.mymemory.translated.net/get?q={Uri.EscapeDataString(text)}&langpair=en|tr";
+            return string.IsNullOrWhiteSpace(_myMemoryEmail) ? url : $"{url}&de={Uri.EscapeDataString(_myMemoryEmail)}";
+        }
 
-            var response = await client.GetAsync(url);
-            response.EnsureSuccessStatusCode();   // hata kodunda exception fırlatır → Success = false
+        // Kota dolduysa MyMemory hata kodu yerine bu uyarıyı çeviri olarak döndürüyor
+        private static void ThrowIfQuotaExceeded(string? text)
+        {
+            if (text != null && text.Contains("MYMEMORY WARNING", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("MyMemory günlük kotası doldu.");
+        }
+
+        // Tek kelime çevirisi: tüm eşleşmelere bakıp tam bu kelimeye ait, en yüksek puanlı, anlamlı çeviriyi seçer
+        // Tek kelime çevirisi: en yüksek puanlı, birbirinden farklı en fazla 3 anlamı döndürür.
+        // Fiilleri "to run" şeklinde soruyoruz: hem mastar halinde ("koşmak") hem daha doğru çeviri geliyor
+        private async Task<string?> FetchTurkishAsync(string headword, string partOfSpeech)
+        {
+            bool isVerb = partOfSpeech.Contains("verb", StringComparison.OrdinalIgnoreCase)
+                       && !partOfSpeech.Contains("adverb", StringComparison.OrdinalIgnoreCase)
+                       && !partOfSpeech.Contains("modal", StringComparison.OrdinalIgnoreCase);   // "to can" olmasın
+            string query = isVerb ? $"to {headword}" : headword;
+
+            var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(8);
+
+            var response = await client.GetAsync(BuildMyMemoryUrl(query));
+            response.EnsureSuccessStatusCode();
 
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
             var root = doc.RootElement;
 
             var candidates = new List<(string Text, double Score)>();
 
-            // 1) Çeviri hafızasındaki eşleşmeler: sadece kaynağı tam olarak bu kelime olanlar
+            // 1) Çeviri hafızasındaki eşleşmeler: sadece kaynağı tam olarak bizim sorduğumuz olanlar
             if (root.TryGetProperty("matches", out var matches) && matches.ValueKind == JsonValueKind.Array)
             {
                 foreach (var m in matches.EnumerateArray())
@@ -78,30 +115,29 @@ namespace WordDeck.Services
                         ? sc.GetDouble() : 0;
 
                     if (translation != null && segment != null &&
-                        segment.Trim().Equals(headword, StringComparison.OrdinalIgnoreCase))
+                        segment.Trim().Equals(query, StringComparison.OrdinalIgnoreCase))
                     {
                         candidates.Add((translation, score));
                     }
                 }
             }
 
-            // 2) Ana sonuç da bir aday (düşük öncelikli)
+            // 2) Ana sonuç da bir aday (en yüksek öncelikli: MyMemory'nin kendi seçimi)
             string? main = root.GetProperty("responseData").GetProperty("translatedText").GetString();
-            if (main != null)
-            {
-                // Günlük ücretsiz kota dolduysa bu mesaj geliyor: hata say ki kaydedilmesin, sonra tekrar denensin
-                if (main.Contains("MYMEMORY WARNING", StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException("MyMemory günlük kotası doldu.");
-                candidates.Add((main, 0.5));
-            }
+            ThrowIfQuotaExceeded(main);
+            if (main != null) candidates.Add((main, 2.0));
 
-            return candidates
-                .Where(c => IsUsableTranslation(c.Text, headword))
+            // Puana göre sırala, aynı anlamları tekrarlama, en fazla 3 tane al
+            var meanings = candidates
+                .Where(c => IsUsableTranslation(c.Text, headword) && IsUsableTranslation(c.Text, query))
                 .OrderByDescending(c => c.Score)
-                .Select(c => c.Text.Trim().ToLower(Turkish))   // Türkçe kurallarıyla küçült (İ → i)
-                .FirstOrDefault();
-        }
+                .Select(c => c.Text.Trim().TrimEnd('.').ToLower(Turkish))   // Türkçe kurallarıyla küçült
+                .Distinct()
+                .Take(3)
+                .ToList();
 
+            return meanings.Count > 0 ? string.Join(", ", meanings) : null;
+        }
         // Çöp çevirileri ele: boş, çok kısa, kelimenin kendisi, "na" gibi
         private static bool IsUsableTranslation(string text, string headword)
         {
@@ -113,7 +149,29 @@ namespace WordDeck.Services
             return !junk.Contains(text.ToLowerInvariant());
         }
 
-        // Wiktionary: İngilizce tanım ve örnek cümle
+        // Cümle çevirisi (tanım için): eşleşme aramaya gerek yok, ana sonucu al
+        private async Task<string?> TranslateSentenceAsync(string text)
+        {
+            if (text.Length > 450) return null;   // MyMemory uzun metinleri kabul etmiyor
+
+            var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(8);
+
+            var response = await client.GetAsync(BuildMyMemoryUrl(text));
+            response.EnsureSuccessStatusCode();
+
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            string? translated = doc.RootElement.GetProperty("responseData").GetProperty("translatedText").GetString();
+            ThrowIfQuotaExceeded(translated);
+
+            return string.IsNullOrWhiteSpace(translated) ? null : translated.Trim();
+        }
+
+        // ============ Wiktionary (tanım + örnek) ============
+
+        private static string CleanHtml(string html) =>
+            WebUtility.HtmlDecode(HtmlTags.Replace(StyleBlocks.Replace(html, ""), "")).Trim();
+
         private async Task<(string? Definition, string? Example)> FetchDefinitionAsync(string headword, string partOfSpeech)
         {
             var client = _httpClientFactory.CreateClient();
@@ -173,12 +231,5 @@ namespace WordDeck.Services
                 ? (withExample.Definition, withExample.Example)
                 : (pool[0].Definition, null);
         }
-
-        // Wiktionary tanımları HTML içeriyor bunları temizlemek için
-        private static readonly Regex HtmlTags = new("<[^>]+>", RegexOptions.Compiled);
-        private static string CleanHtml(string html) =>
-            WebUtility.HtmlDecode(HtmlTags.Replace(html, "")).Trim();
-
-
     }
 }

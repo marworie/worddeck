@@ -1,9 +1,7 @@
-// ============================================================
 // StudySession.jsx
 // Bir seviyenin çalışma oturumu: kartlar sırayla gelir,
 // kullanıcı çevirip "Biliyorum / Bilmiyorum" der, cevap backend'e kaydedilir.
 // Klavye: Boşluk = çevir, ← = bilmiyorum, → = biliyorum
-// ============================================================
 
 import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
@@ -34,8 +32,8 @@ function StudySession({ level, onExit }) {
   const card = cards?.[index]
   const isFinished = cards && index >= cards.length
 
-  // Oturum yüklenince tüm kartların detaylarını arka planda sırayla çek.
-  // Kullanıcı ilk kartlarla uğraşırken sonrakiler veritabanına kaydedilmiş olur.
+  // Oturum yüklenince tüm kartların detaylarını arka planda sırasıyla çek
+  // Kullanıcı ilk kartlarla uğraşırken sonrakiler veritabanına kaydedilmiş olur
   useEffect(() => {
     if (!cards || cards.length === 0) return
     let cancelled = false   // oturumdan çıkılırsa yarıda kes
@@ -73,9 +71,11 @@ function StudySession({ level, onExit }) {
   // Klavye kısayolları
   useEffect(() => {
     function onKeyDown(e) {
+      // Bir kutuya yazı yazılıyorsa (anlam düzeltme) kısayolları devre dışı bırak
+      if (e.target.tagName === 'INPUT') return
       if (!card) return
       if (e.code === 'Space') {
-        e.preventDefault()           // sayfa aşağı kaymasın
+        e.preventDefault()  
         setFlipped(f => !f)
       }
       if (flipped && e.key === 'ArrowRight') answer(true)
@@ -85,10 +85,10 @@ function StudySession({ level, onExit }) {
     return () => window.removeEventListener('keydown', onKeyDown)
   })   // bağımlılık dizisi yok: her render'da güncel card/flipped ile yeniden bağlansın
 
-  // ===== Yükleniyor =====
+  // Yükleniyor 
   if (!cards) return <p className="loading-text">Kartlar hazırlanıyor...</p>
 
-  // ===== Bu seviyede bugün kart yok =====
+  // Bu seviyede bugün kart yok 
   if (cards.length === 0) {
     return (
       <div className="panel session-end">
