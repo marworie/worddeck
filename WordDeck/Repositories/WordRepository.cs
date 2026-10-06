@@ -8,6 +8,7 @@ namespace WordDeck.Repositories
         Task SaveDetailsAsync(int id, string? turkishMeaning, string? definition, string? definitionTr, string? example, bool markFetched);
         Task<string?> GetCustomMeaningAsync(int userId, int wordId);
         Task SaveCustomMeaningAsync(int userId, int wordId, string? meaning, DateTime today);
+        Task<HashSet<string>> FilterKnownAsync(IEnumerable<string> words);
     }
 
     public class WordRepository : BaseRepository, IWordRepository
@@ -50,5 +51,20 @@ namespace WordDeck.Repositories
                       INSERT INTO UserWords (UserId, WordId, Box, NextReviewDate, CustomMeaning)
                       VALUES (@UserId, @WordId, 1, @Today, @Meaning);",
                 new { UserId = userId, WordId = wordId, Meaning = meaning, Today = today });
+        
+        // Verilen kelimelerden sadece bizim listemizde olanları döndürür (küçük harfle)
+        public async Task<HashSet<string>> FilterKnownAsync(IEnumerable<string> words)
+        {
+            var list = words.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (list.Count == 0) return new HashSet<string>();
+
+            // Dapper "IN @Words" yazınca listeyi kendisi (@Words1, @Words2...) diye açıyor
+            var known = await QueryAsync<string>(
+                "SELECT DISTINCT Headword FROM Words WHERE Headword IN @Words",
+                new { Words = list });
+
+            return known.Select(k => k.ToLowerInvariant()).ToHashSet();
+        }
+    
     }
 }

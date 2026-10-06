@@ -89,5 +89,34 @@ namespace WordDeck.Controllers
                 stateChanged = next.State != (HardState)row.HardState   // frontend "🟡 Güçleniyor!" gibi kutlama göstersin
             });
         }
+
+                // GET api/Hard/confusions?min=2 → sık karıştırılan çiftler (karşılaştırma kartları)
+        [HttpGet("confusions")]
+        public async Task<IActionResult> GetConfusions([FromQuery] int min = 2) =>
+            Ok(await _hard.GetConfusionsAsync(GetUserId(), Math.Max(1, min), 30));
+
+        // GET api/Hard/insights → durum sayıları, türlere göre zorlanma, soru tiplerine göre başarı
+        [HttpGet("insights")]
+        public async Task<IActionResult> GetInsights()
+        {
+            int userId = GetUserId();
+            var weekAgo = AppClock.Today.AddDays(-7);
+
+            var counts = await _hard.GetStateCountsAsync(userId, weekAgo);
+            var byPos = await _hard.GetPosStatsAsync(userId);
+            var byType = await _hard.GetQuestionTypeStatsAsync(userId, weekAgo);
+            var confusions = await _hard.GetConfusionsAsync(userId, 2, 3);   // en çok karıştırılan 3 çift
+
+            return Ok(new InsightsDto
+            {
+                HardCount = counts.Hard,
+                StrengtheningCount = counts.Strengthening,
+                MasteredCount = counts.Mastered,
+                MasteredThisWeek = counts.MasteredThisWeek,
+                ByPartOfSpeech = byPos.ToList(),
+                ByQuestionType = byType.ToList(),
+                TopConfusions = confusions.ToList()
+            });
+        }
     }
 }

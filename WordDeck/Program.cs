@@ -68,6 +68,8 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IWordRepository, WordRepository>();
 builder.Services.AddScoped<WordDetailsService>();
 builder.Services.AddScoped<IHardRepository, HardRepository>();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<WordNetworkService>();
 
 var app = builder.Build();
 

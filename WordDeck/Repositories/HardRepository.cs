@@ -23,6 +23,10 @@ namespace WordDeck.Repositories
         Task<HardProgressRow?> GetProgressAsync(int userId, int wordId);
         Task SaveAnswerAsync(int userId, int wordId, HardProgress progress, string questionType, bool isCorrect);
         Task AddConfusionAsync(int userId, int wordId, int confusedWithWordId);
+        Task<IEnumerable<ConfusionDto>> GetConfusionsAsync(int userId, int minTimes, int limit);
+        Task<StateCountsRow> GetStateCountsAsync(int userId, DateTime weekAgo);
+        Task<IEnumerable<PosStatDto>> GetPosStatsAsync(int userId);
+        Task<IEnumerable<QuestionTypeStatDto>> GetQuestionTypeStatsAsync(int userId, DateTime since);
     }
 
     public class HardRepository : BaseRepository, IHardRepository
@@ -106,5 +110,55 @@ namespace WordDeck.Repositories
                       INSERT INTO Confusions (UserId, WordId, ConfusedWithWordId)
                       VALUES (@UserId, @WordId, @OtherId);",
                 new { UserId = userId, WordId = wordId, OtherId = confusedWithWordId });
+    
+                // En az 'minTimes' kez karıştırılan çiftler, en çok karıştırılan en üstte
+        public Task<IEnumerable<ConfusionDto>> GetConfusionsAsync(int userId, int minTimes, int limit) =>
+            QueryAsync<ConfusionDto>(
+                @"SELECT TOP (@Limit)
+                         c.WordId, w1.Headword,
+                         COALESCE(uw1.CustomMeaning, w1.TurkishMeaning) AS TurkishMeaning, w1.Definition,
+                         c.ConfusedWithWordId AS OtherWordId, w2.Headword AS OtherHeadword,
+                         COALESCE(uw2.CustomMeaning, w2.TurkishMeaning) AS OtherTurkishMeaning, w2.Definition AS OtherDefinition,
+                         c.TimesConfused
+                  FROM Confusions c
+                  INNER JOIN Words w1 ON w1.Id = c.WordId
+                  INNER JOIN Words w2 ON w2.Id = c.ConfusedWithWordId
+                  LEFT JOIN UserWords uw1 ON uw1.UserId = c.UserId AND uw1.WordId = c.WordId
+                  LEFT JOIN UserWords uw2 ON uw2.UserId = c.UserId AND uw2.WordId = c.ConfusedWithWordId
+                  WHERE c.UserId = @UserId AND c.TimesConfused >= @MinTimes
+                  ORDER BY c.TimesConfused DESC, c.LastConfusedAt DESC",
+                new { UserId = userId, MinTimes = minTimes, Limit = limit });
+
+        // Her durumda kaç kelime var + bu hafta kaç tanesi ustalaşıldı.
+        // ISNULL: kullanıcının hiç kelimesi yoksa SUM null döner, 0 olsun
+        public async Task<StateCountsRow> GetStateCountsAsync(int userId, DateTime weekAgo) =>
+            await QuerySingleOrDefaultAsync<StateCountsRow>(
+                @"SELECT ISNULL(SUM(CASE WHEN HardState = 1 THEN 1 ELSE 0 END), 0) AS Hard,
+                         ISNULL(SUM(CASE WHEN HardState = 2 THEN 1 ELSE 0 END), 0) AS Strengthening,
+                         ISNULL(SUM(CASE WHEN HardState = 3 THEN 1 ELSE 0 END), 0) AS Mastered,
+                         ISNULL(SUM(CASE WHEN HardState = 3 AND HardStateSince >= @WeekAgo THEN 1 ELSE 0 END), 0) AS MasteredThisWeek
+                  FROM UserWords
+                  WHERE UserId = @UserId",
+                new { UserId = userId, WeekAgo = weekAgo }) ?? new StateCountsRow();
+
+        // Hangi kelime türünde (fiil, isim...) daha çok zorlanılıyor
+        public Task<IEnumerable<PosStatDto>> GetPosStatsAsync(int userId) =>
+            QueryAsync<PosStatDto>(
+                @"SELECT w.PartOfSpeech, COUNT(*) AS HardCount, SUM(uw.WrongCount) AS TotalWrong
+                  FROM UserWords uw
+                  INNER JOIN Words w ON w.Id = uw.WordId
+                  WHERE uw.UserId = @UserId AND uw.HardState IN (1, 2)
+                  GROUP BY w.PartOfSpeech
+                  ORDER BY HardCount DESC",
+                new { UserId = userId });
+
+        // Belirli bir tarihten beri soru tiplerine göre doğru/toplam
+        public Task<IEnumerable<QuestionTypeStatDto>> GetQuestionTypeStatsAsync(int userId, DateTime since) =>
+            QueryAsync<QuestionTypeStatDto>(
+                @"SELECT QuestionType, COUNT(*) AS Total, SUM(CAST(IsCorrect AS INT)) AS Correct
+                  FROM PracticeAnswers
+                  WHERE UserId = @UserId AND AnsweredAt >= @Since
+                  GROUP BY QuestionType",
+                new { UserId = userId, Since = since });
     }
 }

@@ -1,12 +1,13 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WordDeck.Dtos;
 using WordDeck.Repositories;
 using WordDeck.Services;
-using System.Security.Claims;
-using WordDeck.Dtos;
 
 namespace WordDeck.Controllers
 {
+    // Kelime detayları (anlam, tanım, örnek), kullanıcının kendi anlamı ve kelime ağı
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
@@ -14,13 +15,16 @@ namespace WordDeck.Controllers
     {
         private readonly IWordRepository _words;
         private readonly WordDetailsService _details;
-        private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        private readonly WordNetworkService _network;
 
-        public WordsController(IWordRepository words, WordDetailsService details)
+        public WordsController(IWordRepository words, WordDetailsService details, WordNetworkService network)
         {
             _words = words;
             _details = details;
+            _network = network;
         }
+
+        private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
         // GET api/Words/15/details
         // Bilgiler daha önce (tam) çekildiyse veritabanından, çekilmediyse dış API'lerden getirir ve kaydeder
@@ -59,7 +63,7 @@ namespace WordDeck.Controllers
             });
         }
 
-                // PUT api/Words/15/meaning   { "meaning": "koşmak" }   (boş gönderilirse otomatik çeviriye döner)
+        // PUT api/Words/15/meaning   { "meaning": "koşmak" }   (boş gönderilirse otomatik çeviriye döner)
         [HttpPut("{id}/meaning")]
         public async Task<IActionResult> SetMeaning(int id, [FromBody] MeaningDto dto)
         {
@@ -70,6 +74,16 @@ namespace WordDeck.Controllers
             await _words.SaveCustomMeaningAsync(GetUserId(), id, meaning, AppClock.Today);
 
             return Ok(new { turkishMeaning = meaning ?? word.TurkishMeaning, isCustomMeaning = meaning != null });
+        }
+
+        // GET api/Words/15/network → eş/zıt anlamlılar, ilişkili ve birlikte kullanılan kelimeler
+        [HttpGet("{id}/network")]
+        public async Task<IActionResult> GetNetwork(int id)
+        {
+            var word = await _words.GetByIdAsync(id);
+            if (word == null) return NotFound(new { message = "Kelime bulunamadı." });
+
+            return Ok(await _network.GetNetworkAsync(word.Headword, word.PartOfSpeech));
         }
     }
 }
