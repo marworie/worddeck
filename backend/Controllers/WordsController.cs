@@ -48,6 +48,25 @@ namespace WordDeck.Controllers
                 word.Example = result.Example ?? word.Example;
             }
 
+            // Sonradan eklenen alanlar: eksikse ikisini aynı anda tamamla
+            Task<string?> exampleTask = word.Example != null && word.ExampleTr == null
+                ? _details.TranslateExampleAsync(word.Example)
+                : Task.FromResult<string?>(null);
+            Task<(bool Ok, string? Ipa)> phoneticTask = word.Phonetic == null
+                ? _details.FetchPhoneticAsync(word.Headword)
+                : Task.FromResult<(bool, string?)>((false, null));
+            await Task.WhenAll(exampleTask, phoneticTask);
+
+            string? exampleTr = exampleTask.Result;
+            string? phonetic = phoneticTask.Result.Ok ? phoneticTask.Result.Ipa : null;   // "" de kaydedilir: bir daha arama
+
+            if (exampleTr != null || phonetic != null)
+            {
+                await _words.SaveExtrasAsync(id, exampleTr, phonetic);
+                word.ExampleTr = exampleTr ?? word.ExampleTr;
+                word.Phonetic = phonetic ?? word.Phonetic;
+            }
+
             // Kullanıcı bu kelimenin anlamını kendisi düzelttiyse onu göster
             string? customMeaning = await _words.GetCustomMeaningAsync(GetUserId(), id);
 
@@ -59,7 +78,9 @@ namespace WordDeck.Controllers
                 IsCustomMeaning = customMeaning != null,
                 word.Definition,
                 word.DefinitionTr,
-                word.Example
+                word.Example,
+                word.ExampleTr,
+                Phonetic = string.IsNullOrEmpty(word.Phonetic) ? null : word.Phonetic
             });
         }
 

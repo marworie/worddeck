@@ -11,6 +11,8 @@ namespace WordDeck.Models
         public string? Definition { get; set; }
         public string? DefinitionTr { get; set; }         // İngilizce tanımın Türkçe çevirisi
         public string? Example { get; set; }
+        public string? ExampleTr { get; set; }   // örnek cümlenin Türkçe çevirisi
+        public string? Phonetic { get; set; }    // IPA; "" = arandı, bulunamadı; null = henüz aranmadı
         public DateTime? DetailsFetchedAt { get; set; }   // null = bilgiler henüz (tam) çekilmedi
     }
 }

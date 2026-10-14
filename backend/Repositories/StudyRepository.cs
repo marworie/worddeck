@@ -23,7 +23,7 @@ namespace WordDeck.Repositories
             QueryAsync<StudyCardDto>(
                 @"SELECT TOP 50 w.Id AS WordId, w.Headword, w.PartOfSpeech, w.Level,
                          COALESCE(uw.CustomMeaning, w.TurkishMeaning) AS TurkishMeaning,
-                         w.Definition, w.DefinitionTr, w.Example,
+                         w.Definition, w.DefinitionTr, w.Example, w.ExampleTr, NULLIF(w.Phonetic, '') AS Phonetic,
                          CAST(uw.Box AS INT) AS Box, CAST(0 AS BIT) AS IsNew
                   FROM UserWords uw
                   INNER JOIN Words w ON w.Id = uw.WordId
@@ -36,7 +36,7 @@ namespace WordDeck.Repositories
         public Task<IEnumerable<StudyCardDto>> GetNewCardsAsync(int userId, string level, int count) =>
             QueryAsync<StudyCardDto>(
                 @"SELECT TOP (@Count) w.Id AS WordId, w.Headword, w.PartOfSpeech, w.Level,
-                         w.TurkishMeaning, w.Definition, w.DefinitionTr, w.Example,
+                         w.TurkishMeaning, w.Definition, w.DefinitionTr, w.Example, w.ExampleTr, NULLIF(w.Phonetic, '') AS Phonetic,
                          CAST(NULL AS INT) AS Box, CAST(1 AS BIT) AS IsNew
                   FROM Words w
                   WHERE w.Level = @Level

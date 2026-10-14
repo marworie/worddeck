@@ -21,6 +21,9 @@ namespace WordDeck.Services
         // Kalan HTML etiketlerini (<a>, <i> gibi) sil, içlerindeki yazı kalsın
         private static readonly Regex HtmlTags = new("<[^>]+>", RegexOptions.Compiled);
 
+        // Wiktionary ham metninde fonetik şöyle duruyor: {{IPA|en|/əˈbɪlɪti/}}
+        private static readonly Regex IpaRegex = new(@"\{\{IPA\|en\|(/[^/|}]+/)", RegexOptions.Compiled);
+        
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<WordDetailsService> _logger;
         private readonly string? _myMemoryEmail;   // varsa günlük çeviri sınırı 5 bin → 50 bin karakter
@@ -52,6 +55,17 @@ namespace WordDeck.Services
 
             return new WordDetailsResult(meaningOk && dictOk && defTrOk, meaning, dict.Definition, definitionTr, dict.Example);
         }
+
+        // Örnek cümlenin Türkçesi (hata olursa null)
+        public async Task<string?> TranslateExampleAsync(string example)
+        {
+            var (_, translated) = await TryAsync(() => TranslateSentenceAsync(example), "MyMemory (örnek)", example);
+            return translated;
+        }
+
+        // Fonetik. Ok = false ise hata oldu (sonra tekrar denensin); Ipa = "" ise sözlükte yok
+        public Task<(bool Ok, string? Ipa)> FetchPhoneticAsync(string headword) =>
+            TryAsync(() => FetchIpaAsync(headword), "Wiktionary (IPA)", headword);
 
         // Bir isteği çalıştırır; hata olursa uygulamayı çökertmez, loglayıp "başarısız" döner
         private async Task<(bool Ok, T? Value)> TryAsync<T>(Func<Task<T>> action, string source, string headword)
@@ -234,5 +248,34 @@ namespace WordDeck.Services
                 ? (withExample.Definition, withExample.Example)
                 : (pool[0].Definition, null);
         }
+                
+        // Wiktionary sayfasının ham metninden (wikitext) İngilizce fonetiği bulur.
+        // HTML yerine ham metin istiyoruz: render edilmediği için çok daha hızlı geliyor
+        private async Task<string?> FetchIpaAsync(string headword)
+        {
+            var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(10);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("WordDeck/1.0 (https://github.com/marworie/worddeck)");
+
+            var title = Uri.EscapeDataString(headword);
+            var url = "https://en.wiktionary.org/w/api.php?action=query&prop=revisions&rvprop=content" +
+                      $"&rvslots=main&format=json&formatversion=2&titles={title}";
+
+            var response = await client.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+            // Cevap yapısı: query → pages[0] → revisions[0] → slots → main → content
+            var page = doc.RootElement.GetProperty("query").GetProperty("pages")[0];
+            if (page.TryGetProperty("missing", out _)) return "";   // böyle bir sayfa yok
+
+            string wikitext = page.GetProperty("revisions")[0]
+                .GetProperty("slots").GetProperty("main").GetProperty("content").GetString() ?? "";
+
+            var match = IpaRegex.Match(wikitext);
+            return match.Success ? match.Groups[1].Value : "";
+        }
+       
     }
 }

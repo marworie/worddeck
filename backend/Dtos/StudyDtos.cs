@@ -13,6 +13,8 @@ namespace WordDeck.Dtos
         public string? Definition { get; set; }
         public string? DefinitionTr { get; set; }         // İngilizce tanımın Türkçe çevirisi
         public string? Example { get; set; }
+        public string? ExampleTr { get; set; }
+        public string? Phonetic { get; set; }
         public int? Box { get; set; }                 // yeni kelimede null
         public bool IsNew { get; set; }
     }

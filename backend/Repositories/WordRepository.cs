@@ -9,6 +9,7 @@ namespace WordDeck.Repositories
         Task<string?> GetCustomMeaningAsync(int userId, int wordId);
         Task SaveCustomMeaningAsync(int userId, int wordId, string? meaning, DateTime today);
         Task<HashSet<string>> FilterKnownAsync(IEnumerable<string> words);
+        Task SaveExtrasAsync(int id, string? exampleTr, string? phonetic);
     }
 
     public class WordRepository : BaseRepository, IWordRepository
@@ -65,6 +66,13 @@ namespace WordDeck.Repositories
 
             return known.Select(k => k.ToLowerInvariant()).ToHashSet();
         }
-    
+                // Sonradan eklenen alanlar (örnek çevirisi, fonetik): null gelen alan eski değerini korur
+        public Task SaveExtrasAsync(int id, string? exampleTr, string? phonetic) =>
+            ExecuteAsync(
+                @"UPDATE Words
+                  SET ExampleTr = COALESCE(@ExampleTr, ExampleTr),
+                      Phonetic = COALESCE(@Phonetic, Phonetic)
+                  WHERE Id = @Id",
+                new { Id = id, ExampleTr = exampleTr, Phonetic = phonetic });
     }
 }
