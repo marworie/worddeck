@@ -1,3 +1,12 @@
+    // Kullanıcının bir karta verdiği değerlendirme
+    public enum Rating
+    {
+        Again = 0,   // Bilmiyorum
+        Hard = 1,    // Zor hatırladım
+        Good = 2,    // Biliyorum
+        Easy = 3     // Çok kolay
+    }
+
 namespace WordDeck.Services
 {
     // Leitner aralıklı tekrar sistemi.
@@ -12,17 +21,26 @@ namespace WordDeck.Services
         private static readonly int[] IntervalDays = { 0, 1, 2, 4, 8, 16, 60 };
 
         // currentBox: kelimenin şu anki kutusu (yeni kelimeyse null)
-        // known: kullanıcı "Biliyorum" dedi mi
+        // rating: kullanıcının değerlendirmesi
         // today: bugünün tarihi (dışarıdan veriyoruz ki testte istediğimiz günü verebilelim)
-        public static (int NewBox, DateTime NextReviewDate) Next(int? currentBox, bool known, DateTime today)
+        public static (int NewBox, DateTime NextReviewDate) Next(int? currentBox, Rating rating, DateTime today)
         {
             int box = currentBox ?? FirstBox;   // yeni kelime 1. kutudan başlar
 
-            int newBox = known
-                ? Math.Min(box + 1, LearnedBox) // bildiyse bir üst kutu (6'yı geçmez)
-                : FirstBox;                     // bilemediyse en başa
+            int newBox = rating switch
+            {
+                Rating.Again => FirstBox,                          // en başa
+                Rating.Hard => box,                                // aynı kutuda kal
+                Rating.Good => Math.Min(box + 1, LearnedBox),      // bir üst kutu
+                Rating.Easy => Math.Min(box + 2, LearnedBox),      // iki üst kutu
+                _ => box
+            };
 
             return (newBox, today.Date.AddDays(IntervalDays[newBox]));
         }
+
+        // Eski kullanım (biliyorum / bilmiyorum) için kısayol: mevcut testler çalışmaya devam etsin
+        public static (int NewBox, DateTime NextReviewDate) Next(int? currentBox, bool known, DateTime today) =>
+            Next(currentBox, known ? Rating.Good : Rating.Again, today);
     }
 }

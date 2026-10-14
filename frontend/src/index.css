@@ -429,8 +429,24 @@ button {
   font-size: 16px;
 }
 
-.answer-btn.unknown { background: #fee2e2; color: #b91c1c; }
-.answer-btn.known { background: #ccfbf1; color: #0f766e; }
+.answer-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.answer-btn small { font-size: 12px; font-weight: 500; opacity: 0.75; }
+
+.answer-btn.again { background: #fee2e2; color: #b91c1c; }
+.answer-btn.hard  { background: #fef3c7; color: #b45309; }
+.answer-btn.good  { background: #ccfbf1; color: #0f766e; }
+.answer-btn.easy  { background: #dbeafe; color: #1d4ed8; }
+
+/* Telefonda 4 buton yan yana sığmaz: 2x2 ızgara */
+@media (max-width: 768px) {
+  .answer-buttons { display: grid; grid-template-columns: 1fr 1fr; }
+  .answer-buttons:not(.visible) { display: none; }
+}
 
 .keyboard-hint {
   text-align: center;

@@ -22,8 +22,9 @@ namespace WordDeck.Dtos
     {
         [Range(1, int.MaxValue, ErrorMessage = "Geçersiz kelime.")]
         public int WordId { get; set; }
-
-        public bool Known { get; set; }   // true = Biliyorum, false = Bilmiyorum
+        // 0 = Bilmiyorum, 1 = Zor hatırladım, 2 = Biliyorum, 3 = Çok kolay
+        [Range(0, 3, ErrorMessage = "Geçersiz değerlendirme.")]
+        public int Rating { get; set; }
     }
 
     // İlerleme sayfası: bir seviyenin durumu

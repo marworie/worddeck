@@ -57,9 +57,11 @@ namespace WordDeck.Controllers
 
             // Leitner hesabı: yeni kutu ve bir sonraki tekrar tarihi
             int? currentBox = await _study.GetBoxAsync(userId, dto.WordId);
-            var (newBox, next) = LeitnerService.Next(currentBox, dto.Known, today);
+            var rating = (Rating)dto.Rating;
+            bool known = rating != Rating.Again;   // "Zor hatırladım" da doğru sayılır, sadece Bilmiyorum yanlış
+            var (newBox, next) = LeitnerService.Next(currentBox, rating, today);
 
-            await _study.SaveAnswerAsync(userId, dto.WordId, newBox, next, dto.Known, today);
+            await _study.SaveAnswerAsync(userId, dto.WordId, newBox, next, known, today);
 
             return Ok(new
             {

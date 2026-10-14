@@ -90,5 +90,27 @@ namespace WordDeck.Tests
 
             Assert.Equal(1, StreakCalculator.Calculate(dates, Today));
         }
+
+                [Theory]
+        [InlineData(3, Rating.Again, 1, 1)]
+        [InlineData(3, Rating.Hard, 3, 4)]    // aynı kutu, aynı aralık
+        [InlineData(3, Rating.Good, 4, 8)]
+        [InlineData(3, Rating.Easy, 5, 16)]   // iki kutu atlar
+        [InlineData(5, Rating.Easy, 6, 60)]   // 6'yı geçmez
+        public void DortluDegerlendirme(int current, Rating rating, int expectedBox, int expectedDays)
+        {
+            var (box, next) = LeitnerService.Next(current, rating, Today);
+
+            Assert.Equal(expectedBox, box);
+            Assert.Equal(Today.AddDays(expectedDays), next);
+        }
+
+        [Fact]
+        public void YeniKelime_CokKolay_Kutu3()
+        {
+            var (box, _) = LeitnerService.Next(null, Rating.Easy, Today);
+
+            Assert.Equal(3, box);
+        }
     }
 }

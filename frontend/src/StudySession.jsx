@@ -7,6 +7,27 @@ import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
 import Flashcard from './Flashcard'
 
+// Değerlendirme butonları. Aralıklar backend'deki LeitnerService ile aynı:
+// orada değişirse burayı da güncellemek gerekir
+const INTERVAL_DAYS = [0, 1, 2, 4, 8, 16, 60]
+
+const RATINGS = [
+  { value: 0, label: 'Bilmiyorum', emoji: '😕', className: 'again', key: '1' },
+  { value: 1, label: 'Zor hatırladım', emoji: '😬', className: 'hard', key: '2' },
+  { value: 2, label: 'Biliyorum', emoji: '🙂', className: 'good', key: '3' },
+  { value: 3, label: 'Çok kolay', emoji: '😎', className: 'easy', key: '4' }
+]
+
+// Bu değerlendirmeyle kart kaç gün sonra tekrar gelir (butonun altında göstermek için)
+function previewDays(box, rating) {
+  const current = box ?? 1
+  const next = rating === 0 ? 1
+    : rating === 1 ? current
+    : Math.min(current + (rating === 2 ? 1 : 2), 6)
+  const days = INTERVAL_DAYS[next]
+  return days === 1 ? 'yarın' : `${days} gün`
+}
+
 // level: çalışılan seviye, onExit: ana sayfaya dönmek için
 function StudySession({ level, onExit }) {
   const [cards, setCards] = useState(null)   // null = yükleniyor
@@ -49,16 +70,17 @@ function StudySession({ level, onExit }) {
     return () => { cancelled = true }
   }, [cards])
 
-  async function answer(known) {
+  async function answer(rating) {
     if (!card || isAnswering) return
     setIsAnswering(true)
 
     const response = await apiFetch('/api/Study/answer', {
       method: 'POST',
-      body: JSON.stringify({ wordId: card.wordId, known })
+      body: JSON.stringify({ wordId: card.wordId, rating })
     })
 
     if (response.ok) {
+      const known = rating > 0   // sadece "Bilmiyorum" yanlış sayılır
       setStats(prev => known
         ? { ...prev, known: prev.known + 1 }
         : { ...prev, unknown: prev.unknown + 1 })
@@ -78,8 +100,11 @@ function StudySession({ level, onExit }) {
         e.preventDefault()  
         setFlipped(f => !f)
       }
-      if (flipped && e.key === 'ArrowRight') answer(true)
-      if (flipped && e.key === 'ArrowLeft') answer(false)
+      // 1-4 tuşları değerlendirme; ← bilmiyorum, → biliyorum kısayolları da kalsın
+      const byKey = RATINGS.find(r => r.key === e.key)
+      if (flipped && byKey) answer(byKey.value)
+      if (flipped && e.key === 'ArrowRight') answer(2)
+      if (flipped && e.key === 'ArrowLeft') answer(0)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -132,17 +157,22 @@ function StudySession({ level, onExit }) {
       {/* key: her yeni kartta bileşen sıfırdan oluşsun, dönme animasyonu önceki karttan kalmasın */}
       <Flashcard key={card.wordId} card={card} flipped={flipped} onFlip={() => setFlipped(f => !f)} />
 
-      {/* Cevap butonları: kart çevrilince görünür */}
+      {/* Değerlendirme butonları: kart çevrilince görünür */}
       <div className={`answer-buttons ${flipped ? 'visible' : ''}`}>
-        <button className="btn answer-btn unknown" onClick={() => answer(false)} disabled={isAnswering}>
-          😕 Bilmiyorum
-        </button>
-        <button className="btn answer-btn known" onClick={() => answer(true)} disabled={isAnswering}>
-          🙂 Biliyorum
-        </button>
+        {RATINGS.map(r => (
+          <button
+            key={r.value}
+            className={`btn answer-btn ${r.className}`}
+            onClick={() => answer(r.value)}
+            disabled={isAnswering}
+          >
+            <span>{r.emoji} {r.label}</span>
+            <small>{previewDays(card.box, r.value)}</small>
+          </button>
+        ))}
       </div>
 
-      <p className="keyboard-hint">⌨️ Boşluk: çevir · ←: bilmiyorum · →: biliyorum</p>
+      <p className="keyboard-hint">⌨️ Boşluk: çevir · 1–4: değerlendir</p>
     </div>
   )
 }
