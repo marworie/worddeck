@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { apiFetch } from './api'
 import { posTr } from './labels'
+import { speak as speakText } from './preferences'
 
 // word: listeden gelen kelime (wordId, headword, partOfSpeech, level), onClose: kapat
 function WordDetailModal({ word, onClose }) {
@@ -32,10 +33,7 @@ function WordDetailModal({ word, onClose }) {
   }, [onClose])
 
   function speak() {
-    const u = new SpeechSynthesisUtterance(word.headword)
-    u.lang = 'en-US'
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(u)
+    speakText(word.headword)
   }
 
   // Birlikte kullanılanları kalıba oturt: "narrow lane" ya da "run out"

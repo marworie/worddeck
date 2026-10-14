@@ -41,12 +41,16 @@ namespace WordDeck.Dtos
     {
         public List<LevelProgressDto> Levels { get; set; } = new();
         public int Streak { get; set; }
+        public int TodayReviewed { get; set; }   // bugün kaç kart çalışıldı
+        public int DailyGoal { get; set; }
     }
 
     public class SettingsDto
     {
         [Range(1, 50, ErrorMessage = "Yeni kelime sayısı 1 ile 50 arasında olmalı.")]
         public int DailyNewWords { get; set; }
+        [Range(5, 200, ErrorMessage = "Günlük hedef 5 ile 200 arasında olmalı.")]
+        public int DailyGoal { get; set; }
     }
 
     // Geçerli seviyeler tek yerde

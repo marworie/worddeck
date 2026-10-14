@@ -3,9 +3,9 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
 import { ToastProvider } from './ToastContext'
+import { applyTheme } from './preferences'
 
-// React 18'de createRoot ile render etmeliyiz
-
+applyTheme()   // sayfa açılır açılmaz kayıtlı temayı uygula
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     {/* ToastProvider en dışta: App dahil herkes useToast() kullanabilsin */}

@@ -888,3 +888,48 @@ button {
   .quiz-start-btn { margin-left: 0; width: 100%; }
   .quiz-mistake-row { grid-template-columns: 1fr; gap: 2px; }
 }
+
+/* ===== Ayarlar ===== */
+.settings-page { display: flex; flex-direction: column; gap: 16px; }
+.settings-section { display: flex; flex-direction: column; gap: 16px; }
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.setting-row p { margin: 2px 0 0; }
+
+/* ===== Günlük hedef çubuğu ===== */
+.daily-goal { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; max-width: 320px; }
+.daily-goal-bar { height: 8px; border-radius: 8px; background: #e0f2fe; overflow: hidden; }
+.daily-goal-bar div { height: 100%; background: var(--gradient); transition: width 0.4s; }
+
+/* ===== Koyu tema: renk değişkenlerini değiştir, tüm sayfa ona göre boyanır ===== */
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --border: #334155;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Açık renk sabit verilmiş arka planları koyu temada yumuşat */
+[data-theme="dark"] .app-header { background: rgba(15, 23, 42, 0.9); }
+[data-theme="dark"] .btn-secondary,
+[data-theme="dark"] .speak-btn,
+[data-theme="dark"] .level-bar,
+[data-theme="dark"] .session-progress,
+[data-theme="dark"] .daily-goal-bar,
+[data-theme="dark"] .type-bar,
+[data-theme="dark"] .chip.collocation,
+[data-theme="dark"] .q-type-tag { background: #1e3a5f; color: #7dd3fc; }
+[data-theme="dark"] .filter-chip,
+[data-theme="dark"] .chip { background: #334155; color: var(--text); }
+[data-theme="dark"] .filter-chip.active { background: var(--primary); color: white; }
+[data-theme="dark"] .hard-row:hover { background: #334155; }
+[data-theme="dark"] .tr-meaning,
+[data-theme="dark"] .q-meaning { color: #7dd3fc; }
+[data-theme="dark"] input { background: #0f172a; color: var(--text); border-color: var(--border); }

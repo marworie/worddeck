@@ -10,6 +10,7 @@ import StudySession from './StudySession'
 import HardWords from './HardWords'
 import HardPractice from './HardPractice'
 import Quiz from './Quiz'
+import Settings from './Settings'
 
 function App() {
   const showToast = useToast()
@@ -79,7 +80,7 @@ function App() {
           />
         )}
         {view === 'hardPractice' && <HardPractice level={practiceLevel} onExit={() => setView('hard')} />}
-        {view === 'settings' && <p>Ayarlar yakında 🙂</p>}
+        {view === 'settings' && <Settings onBack={() => setView('home')} />}
       </main>
     </>
   )

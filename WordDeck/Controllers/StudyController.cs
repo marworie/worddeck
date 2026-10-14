@@ -79,10 +79,15 @@ namespace WordDeck.Controllers
             var levels = await _study.GetProgressAsync(userId, today);
             var dates = await _study.GetStudyDatesAsync(userId);
 
+            var user = await _users.GetByIdAsync(userId);
+            int todayReviewed = await _study.GetTodayReviewedAsync(userId, today);
+
             return Ok(new ProgressDto
             {
                 Levels = levels.ToList(),
-                Streak = StreakCalculator.Calculate(dates, today)
+                Streak = StreakCalculator.Calculate(dates, today),
+                TodayReviewed = todayReviewed,
+                DailyGoal = user?.DailyGoal ?? 20
             });
         }
     }

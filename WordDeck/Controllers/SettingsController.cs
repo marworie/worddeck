@@ -24,13 +24,13 @@ namespace WordDeck.Controllers
         {
             var user = await _users.GetByIdAsync(GetUserId());
             if (user == null) return Unauthorized();
-            return Ok(new SettingsDto { DailyNewWords = user.DailyNewWords });
+                return Ok(new SettingsDto { DailyNewWords = user.DailyNewWords, DailyGoal = user.DailyGoal });
         }
 
         [HttpPut]
         public async Task<IActionResult> Update([FromBody] SettingsDto dto)
         {
-            await _users.UpdateDailyNewWordsAsync(GetUserId(), dto.DailyNewWords);
+            await _users.UpdateSettingsAsync(GetUserId(), dto.DailyNewWords, dto.DailyGoal);
             return NoContent();
         }
     }

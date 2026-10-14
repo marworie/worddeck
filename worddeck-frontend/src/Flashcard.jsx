@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
 import { useSpeechRecognition } from './useSpeechRecognition'
 import { checkSpoken } from './answerCheck'
+import { speak as speakText } from './preferences'
 
 // card: oturumdan gelen kart, flipped: arka yüz mü görünüyor, onFlip: çevirme
 function Flashcard({ card, flipped, onFlip }) {
@@ -39,11 +40,7 @@ function Flashcard({ card, flipped, onFlip }) {
   // Tarayıcının kendi seslendirme özelliği (ücretsiz, internet gerekmez)
   function speak(e) {
     e.stopPropagation()   // butona basınca kart dönmesin
-    const utterance = new SpeechSynthesisUtterance(card.headword)
-    utterance.lang = 'en-US'
-    utterance.rate = 0.9
-    window.speechSynthesis.cancel()   // önceki okuma sürüyorsa kes
-    window.speechSynthesis.speak(utterance)
+    speakText(card.headword)
   }
 
   // 🎤 Kelimeyi söyle, tarayıcı doğru anlıyor mu bak

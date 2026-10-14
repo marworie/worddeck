@@ -8,14 +8,7 @@
 import { useEffect, useState } from 'react'
 import { checkTyped, checkSpoken } from './answerCheck'
 import { useSpeechRecognition } from './useSpeechRecognition'
-
-function speak(text) {
-  const u = new SpeechSynthesisUtterance(text)
-  u.lang = 'en-US'
-  u.rate = 0.9
-  window.speechSynthesis.cancel()
-  window.speechSynthesis.speak(u)
-}
+import { speak } from './preferences'
 
 // Soruda gösterilecek anlam: Türkçe yoksa İngilizce tanım
 function MeaningPrompt({ question }) {

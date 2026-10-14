@@ -8,7 +8,7 @@ namespace WordDeck.Repositories
         Task<User?> GetByUsernameAsync(string username);
         Task<User?> GetByIdAsync(int id);
         Task<int> AddAsync(string username, string passwordHash);
-        Task UpdateDailyNewWordsAsync(int userId, int count);
+        Task UpdateSettingsAsync(int userId, int dailyNewWords, int dailyGoal);
     }
 
     public class UserRepository : BaseRepository, IUserRepository
@@ -33,9 +33,9 @@ namespace WordDeck.Repositories
                   SELECT CAST(SCOPE_IDENTITY() AS int);",
                 new { Username = username, PasswordHash = passwordHash });
 
-        public Task UpdateDailyNewWordsAsync(int userId, int count) =>
+        public Task UpdateSettingsAsync(int userId, int dailyNewWords, int dailyGoal) =>
             ExecuteAsync(
-                "UPDATE Users SET DailyNewWords = @Count WHERE Id = @Id",
-                new { Id = userId, Count = count });
+                "UPDATE Users SET DailyNewWords = @NewWords, DailyGoal = @Goal WHERE Id = @Id",
+                new { Id = userId, NewWords = dailyNewWords, Goal = dailyGoal });
     }
 }

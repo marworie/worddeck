@@ -11,6 +11,7 @@ namespace WordDeck.Repositories
         Task SaveAnswerAsync(int userId, int wordId, int newBox, DateTime nextReviewDate, bool known, DateTime today);
         Task<IEnumerable<LevelProgressDto>> GetProgressAsync(int userId, DateTime today);
         Task<IEnumerable<DateTime>> GetStudyDatesAsync(int userId);
+        Task<int> GetTodayReviewedAsync(int userId, DateTime today);
     }
 
     public class StudyRepository : BaseRepository, IStudyRepository
@@ -101,5 +102,11 @@ namespace WordDeck.Repositories
             QueryAsync<DateTime>(
                 "SELECT StudyDate FROM StudyDays WHERE UserId = @UserId",
                 new { UserId = userId });
+        
+        // Bugün kaç kart çalışıldı (günlük hedef çubuğu için)
+        public async Task<int> GetTodayReviewedAsync(int userId, DateTime today) =>
+            await ExecuteScalarAsync<int?>(
+                "SELECT CardsReviewed FROM StudyDays WHERE UserId = @UserId AND StudyDate = @Today",
+                new { UserId = userId, Today = today }) ?? 0;   // bugün hiç çalışılmadıysa satır yok → 0
     }
 }

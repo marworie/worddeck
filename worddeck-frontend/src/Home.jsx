@@ -41,6 +41,17 @@ function Home({ onStartStudy, onOpenHard, onStartQuiz }) {
         <div>
           <h2>Merhaba, {localStorage.getItem('username')}! 👋</h2>
           <p>Bugün hangi seviyeyi çalışmak istersin?</p>
+          {/* Günlük hedef: bugün çalışılan kart / hedef */}
+          <div className="daily-goal">
+            <div className="daily-goal-bar">
+              <div style={{ width: `${Math.min(100, (progress.todayReviewed / progress.dailyGoal) * 100)}%` }} />
+            </div>
+            <span className="muted small">
+              {progress.todayReviewed >= progress.dailyGoal
+                ? `✓ Günlük hedef tamam (${progress.todayReviewed} kart)`
+                : `Bugün ${progress.todayReviewed} / ${progress.dailyGoal} kart`}
+            </span>
+          </div>
         </div>
         <div className="streak-badge" title="Kaç gündür aralıksız çalışıyorsun">
           <span className="streak-fire">🔥</span>

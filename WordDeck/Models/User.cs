@@ -7,6 +7,7 @@ namespace WordDeck.Models
         public string Username { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
         public int DailyNewWords { get; set; }     // oturum başına yeni kelime sayısı (ayarlar)
+        public int DailyGoal { get; set; } // günlük kart hedefi
         public DateTime CreatedDate { get; set; }
     }
 }
