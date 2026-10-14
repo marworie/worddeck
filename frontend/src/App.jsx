@@ -11,6 +11,7 @@ import HardWords from './HardWords'
 import HardPractice from './HardPractice'
 import Quiz from './Quiz'
 import Settings from './Settings'
+import PhoneticGuide from './PhoneticGuide'
 
 function App() {
   const showToast = useToast()
@@ -69,6 +70,7 @@ function App() {
             onStartStudy={startStudy}
             onOpenHard={() => setView('hard')}
             onStartQuiz={(level, count) => { setQuizConfig({ level, count }); setView('quiz') }}
+            onOpenPhonetics={() => setView('phonetics')}
           />
         )}
         {view === 'quiz' && <Quiz level={quizConfig.level} count={quizConfig.count} onExit={() => setView('home')} />}
@@ -81,6 +83,7 @@ function App() {
         )}
         {view === 'hardPractice' && <HardPractice level={practiceLevel} onExit={() => setView('hard')} />}
         {view === 'settings' && <Settings onBack={() => setView('home')} />}
+        {view === 'phonetics' && <PhoneticGuide onBack={() => setView('home')} />}
       </main>
     </>
   )

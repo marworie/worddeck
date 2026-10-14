@@ -11,6 +11,7 @@ import { apiFetch } from './api'
 import { useSpeechRecognition } from './useSpeechRecognition'
 import { checkSpoken } from './answerCheck'
 import { speak as speakText } from './preferences'
+import { ipaToTurkish } from './phonetics'
 
 // card: oturumdan gelen kart, flipped: arka yüz mü görünüyor, onFlip: çevirme
 function Flashcard({ card, flipped, onFlip }) {
@@ -21,7 +22,9 @@ function Flashcard({ card, flipped, onFlip }) {
           turkishMeaning: card.turkishMeaning,
           definition: card.definition,
           definitionTr: card.definitionTr,
-          example: card.example
+          example: card.example,
+          exampleTr: card.exampleTr,
+          phonetic: card.phonetic
         }
       : null
   )
@@ -29,6 +32,8 @@ function Flashcard({ card, flipped, onFlip }) {
   const [editValue, setEditValue] = useState('')
   const { supported: micSupported, listening, listen } = useSpeechRecognition()
   const [speechResult, setSpeechResult] = useState(null)   // { ok, heard }
+  // Fonetik oturumdan gelmemiş olabilir (henüz çekilmemişse), detaylar gelince oradan alınır
+  const phonetic = details?.phonetic ?? card.phonetic
 
   // Kart ekrana gelir gelmez detayları çek (veritabanında hazırsa anında gelir)
   useEffect(() => {
@@ -88,6 +93,12 @@ function Flashcard({ card, flipped, onFlip }) {
 
           <h2 className="flashcard-word">{card.headword}</h2>
           <p className="flashcard-pos">{card.partOfSpeech}</p>
+           {phonetic && (
+            <p className="flashcard-phonetic">
+              {phonetic}
+              <span className="phonetic-tr">{ipaToTurkish(phonetic)}</span>
+            </p>
+          )}
 
           <div className="front-buttons">
             <button className="speak-btn" onClick={speak} title="Telaffuzu dinle">🔊</button>
@@ -160,7 +171,10 @@ function Flashcard({ card, flipped, onFlip }) {
               {details.example && (
                 <div className="detail-row">
                   <span className="detail-icon">💬</span>
-                  <p className="example">"{details.example}"</p>
+                  <div>
+                    <p className="example">"{details.example}"</p>
+                    {details.exampleTr && <p className="definition-tr">{details.exampleTr}</p>}
+                  </div>
                 </div>
               )}
             </>

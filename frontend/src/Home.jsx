@@ -16,7 +16,7 @@ const LEVEL_INFO = {
 }
 
 // onStartStudy: seviye seçilince App'e haber vermek için
-function Home({ onStartStudy, onOpenHard, onStartQuiz }) {
+function Home({ onStartStudy, onOpenHard, onStartQuiz, onOpenPhonetics}) {
   const [progress, setProgress] = useState(null)   // null = yükleniyor
   const [hardInsights, setHardInsights] = useState(null)
 
@@ -76,6 +76,14 @@ function Home({ onStartStudy, onOpenHard, onStartQuiz }) {
       )}
       
       <QuizCard onStart={onStartQuiz} />
+      <div className="guide-link panel" onClick={onOpenPhonetics}>
+        <span className="guide-link-icon">/ə/</span>
+        <div>
+          <b>Fonetik Rehberi</b>
+          <p className="muted small">Kartlardaki /əˈtʃiːv/ gibi işaretler ne demek?</p>
+        </div>
+        <span className="guide-link-arrow">→</span>
+      </div>
 
       {/* Seviye kartları */}
       <div className="level-grid">
