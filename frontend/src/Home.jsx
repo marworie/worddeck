@@ -1,123 +1,105 @@
+// ============================================================
 // Home.jsx
-// Ana sayfa: seri (streak) ve her seviyenin ilerlemesi.
-// Bir seviyenin "Çalış" butonuna basınca o seviyenin oturumu başlar.
+// Ana sayfa panosu: bugünün kartları (tek büyük çağrı), günlük hedef ve seri,
+// bölüm kısayolları ve seviyelerin kompakt listesi.
+// ============================================================
 
 import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
-import QuizCard from './QuizCard'
+import LevelList from './LevelList'
 
-// Seviyelerin kısa açıklamaları
-const LEVEL_INFO = {
-  A1: 'Başlangıç',
-  A2: 'Temel',
-  B1: 'Orta',
-  B2: 'Orta üstü',
-  C1: 'İleri'
-}
-
-// onStartStudy: seviye seçilince App'e haber vermek için
-function Home({ onStartStudy, onOpenHard, onStartQuiz, onOpenPhonetics}) {
-  const [progress, setProgress] = useState(null)   // null = yükleniyor
-  const [hardInsights, setHardInsights] = useState(null)
-
-  apiFetch('/api/Hard/insights')
-    .then(res => res.ok ? res.json() : null)
-    .then(data => setHardInsights(data))
+function Home({ onStartStudy, onNavigate }) {
+  const [progress, setProgress] = useState(null)
+  const [hard, setHard] = useState(null)
+  const [lastQuiz, setLastQuiz] = useState(null)
+  const [lists, setLists] = useState([])
 
   useEffect(() => {
-    apiFetch('/api/Study/progress')
-      .then(res => res.ok ? res.json() : null)
-      .then(data => setProgress(data))
+    apiFetch('/api/Study/progress').then(r => (r.ok ? r.json() : null)).then(setProgress)
+    apiFetch('/api/Hard/insights').then(r => (r.ok ? r.json() : null)).then(setHard)
+    apiFetch('/api/Quiz/history').then(r => (r.ok ? r.json() : [])).then(h => setLastQuiz(h[0] ?? null))
+    apiFetch('/api/Lists').then(r => (r.ok ? r.json() : [])).then(setLists)
   }, [])
 
-  if (!progress) {
-    return <p className="loading-text">Yükleniyor...</p>
-  }
+  if (!progress) return <p className="loading-text">Yükleniyor...</p>
+
+  // Bugün toplam kaç tekrar var, en çok hangi seviyede
+  const totalDue = progress.levels.reduce((sum, l) => sum + l.dueToday, 0)
+  const busiest = [...progress.levels].sort((a, b) => b.dueToday - a.dueToday)[0]
+  // Tekrar yoksa: çalışmaya başladığın ilk seviyeden yeni kelimelerle devam
+  const startLevel = totalDue > 0
+    ? busiest.level
+    : progress.levels.find(l => l.learning > 0)?.level ?? 'A1'
+
+  const goalPct = Math.min(100, (progress.todayReviewed / progress.dailyGoal) * 100)
+  const favorites = lists.find(l => l.isFavorites)
+  const quizPct = lastQuiz ? Math.round((lastQuiz.correctAnswers / lastQuiz.totalQuestions) * 100) : null
 
   return (
-    <div className="home">
-      {/* Selamlama + seri */}
-      <div className="home-hero panel">
-        <div>
-          <h2>Merhaba, {localStorage.getItem('username')}! 👋</h2>
-          <p>Bugün hangi seviyeyi çalışmak istersin?</p>
-          {/* Günlük hedef: bugün çalışılan kart / hedef */}
-          <div className="daily-goal">
-            <div className="daily-goal-bar">
-              <div style={{ width: `${Math.min(100, (progress.todayReviewed / progress.dailyGoal) * 100)}%` }} />
-            </div>
-            <span className="muted small">
-              {progress.todayReviewed >= progress.dailyGoal
-                ? `✓ Günlük hedef tamam (${progress.todayReviewed} kart)`
-                : `Bugün ${progress.todayReviewed} / ${progress.dailyGoal} kart`}
+    <div className="dashboard">
+      <h2 className="dash-greeting">Merhaba, {localStorage.getItem('username')} 👋</h2>
+
+      <div className="dash-top">
+        {/* Günün ana çağrısı */}
+        <div className="today-card">
+          <span className="today-label">Bugün</span>
+          <span className="today-count">
+            {totalDue > 0 ? `${totalDue} kart seni bekliyor` : 'Tekrar edecek kart yok'}
+          </span>
+          <span className="today-sub">
+            {totalDue > 0
+              ? `En çok ${busiest.level} seviyesinde (${busiest.dueToday} tekrar)`
+              : `${startLevel} seviyesinde yeni kelimelerle devam et`}
+          </span>
+          <button className="btn today-btn" onClick={() => onStartStudy(startLevel)}>
+            Çalışmaya başla <i className="ti ti-arrow-right" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="dash-stats">
+          <div className="stat-card">
+            <span className="stat-label">Günlük hedef</span>
+            <span className="stat-value">{progress.todayReviewed} / {progress.dailyGoal}</span>
+            <div className="daily-goal-bar"><div style={{ width: `${goalPct}%` }} /></div>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Seri</span>
+              <span className="stat-value">
+              {progress.streak > 0 ? `${progress.streak}. gün 🔥` : 'Bugün başla'}
             </span>
           </div>
         </div>
-        <div className="streak-badge" title="Kaç gündür aralıksız çalışıyorsun">
-          <span className="streak-fire">🔥</span>
-          <span className="streak-number">{progress.streak}</span>
-          <span className="streak-label">gün</span>
-        </div>
       </div>
 
-      {/* Zorlandıklarım kısayolu: en az bir zor kelime varsa görünsün */}
-      {hardInsights && hardInsights.hardCount + hardInsights.strengtheningCount + hardInsights.masteredCount > 0 && (
-        <div className="hard-shortcut panel" onClick={onOpenHard}>
-          <div>
-            <h3>Zorlandıklarım</h3>
-            <p className="muted">Bilemediğin kelimeleri farklı soru tipleriyle çalış</p>
-          </div>
-          <div className="hard-shortcut-counts">
-            <span className="state-tag state-hard">{hardInsights.hardCount} zor</span>
-            <span className="state-tag state-strengthening">{hardInsights.strengtheningCount} güçleniyor</span>
-            <span className="state-tag state-mastered">{hardInsights.masteredCount} ustalaşıldı</span>
-          </div>
-        </div>
-      )}
-      
-      <QuizCard onStart={onStartQuiz} />
-      <div className="guide-link panel" onClick={onOpenPhonetics}>
-        <span className="guide-link-icon">/ə/</span>
-        <div>
-          <b>Fonetik Rehberi</b>
-          <p className="muted small">Kartlardaki /əˈtʃiːv/ gibi işaretler ne demek?</p>
-        </div>
-        <span className="guide-link-arrow">→</span>
+      {/* Bölüm kısayolları */}
+      <div className="shortcut-grid">
+        <button className="shortcut-card" onClick={() => onNavigate('hard')}>
+          <i className="ti ti-flame shortcut-icon hard" aria-hidden="true" />
+          <b>Zorlandıklarım</b>
+          <span className="muted small">
+            {hard ? `${hard.hardCount} zor · ${hard.strengtheningCount} güçleniyor` : '…'}
+          </span>
+        </button>
+        <button className="shortcut-card" onClick={() => onNavigate('quizSetup')}>
+          <i className="ti ti-checklist shortcut-icon quiz" aria-hidden="true" />
+          <b>Sınav</b>
+          <span className="muted small">
+            {lastQuiz ? `Son: ${lastQuiz.level} · %${quizPct}` : 'Henüz sınav olmadın'}
+          </span>
+        </button>
+        <button className="shortcut-card" onClick={() => onNavigate('notebook')}>
+          <i className="ti ti-notebook shortcut-icon notebook" aria-hidden="true" />
+          <b>Defterim</b>
+          <span className="muted small">
+            {lists.length} liste · {favorites?.wordCount ?? 0} favori
+          </span>
+        </button>
       </div>
 
-      {/* Seviye kartları */}
-      <div className="level-grid">
-        {progress.levels.map(lvl => {
-          // Çubukta öğrenilenler (koyu) ve öğrenilmekte olanlar (açık) ayrı görünsün
-          const learnedPct = (lvl.learned / lvl.total) * 100
-          const learningPct = (lvl.learning / lvl.total) * 100
-
-          return (
-            <div key={lvl.level} className="level-card panel">
-              <div className="level-card-top">
-                <span className="level-badge">{lvl.level}</span>
-                <span className="level-name">{LEVEL_INFO[lvl.level]}</span>
-                {lvl.dueToday > 0 && (
-                  <span className="due-badge">{lvl.dueToday} tekrar</span>
-                )}
-              </div>
-
-              <div className="level-bar">
-                <div className="level-bar-learned" style={{ width: `${learnedPct}%` }} />
-                <div className="level-bar-learning" style={{ width: `${learningPct}%` }} />
-              </div>
-
-              <p className="level-stats">
-                <strong>{lvl.learned}</strong> öğrenildi · {lvl.learning} öğreniliyor · {lvl.total} kelime
-              </p>
-
-              <button className="btn btn-primary level-study-btn" onClick={() => onStartStudy(lvl.level)}>
-                Çalış →
-              </button>
-            </div>
-          )
-        })}
-      </div>
+      <section className="panel">
+        <h3 className="section-title">Seviyeler</h3>
+        <LevelList levels={progress.levels} onStartStudy={onStartStudy} />
+      </section>
     </div>
   )
 }

@@ -12,8 +12,7 @@ import WordRow from './WordRow'
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1']
 const POS_OPTIONS = ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'pronoun', 'conjunction', 'determiner']
 
-function Search({ onBack }) {
-  const [query, setQuery] = useState('')
+function Search({ query }) {
   const [level, setLevel] = useState('')
   const [pos, setPos] = useState('')
   const [results, setResults] = useState(null)   // null = henüz arama yapılmadı
@@ -40,19 +39,9 @@ function Search({ onBack }) {
 
   return (
     <div className="search-page">
-      <button className="btn btn-ghost back-btn" onClick={onBack}>← Ana sayfa</button>
       <h2 className="page-title">Kelime ara</h2>
 
       <div className="panel search-box">
-        <input
-          className="search-input"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="İngilizce ya da Türkçe yaz..."
-          autoFocus
-          autoCapitalize="none"
-          autoCorrect="off"
-        />
         <div className="search-filters">
           <div className="chip-row">
             <button className={`filter-chip ${level === '' ? 'active' : ''}`} onClick={() => setLevel('')}>Tümü</button>

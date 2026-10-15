@@ -40,7 +40,7 @@ function PhoneticGuide({ onBack }) {
                 <p className="guide-tip">{item.tip}</p>
                 <button className="guide-example" onClick={() => speak(item.word)}>
                   🔊 <b>{item.word}</b>
-                  <span className="muted">{item.ipa}</span>
+                  <span className="guide-ipa">{item.ipa}</span>
                   <span className="phonetic-tr">{ipaToTurkish(item.ipa)}</span>
                 </button>
               </div>
