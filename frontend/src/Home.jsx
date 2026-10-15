@@ -97,7 +97,10 @@ function Home({ onStartStudy, onNavigate }) {
       </div>
 
       <section className="panel">
-        <h3 className="section-title">Seviyeler</h3>
+        <div className="chart-head">
+          <h3 className="section-title">Seviyeler</h3>
+          <button className="btn btn-ghost small" onClick={() => onNavigate('stats')}>İstatistikler →</button>
+        </div>
         <LevelList levels={progress.levels} onStartStudy={onStartStudy} />
       </section>
     </div>

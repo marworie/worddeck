@@ -18,5 +18,21 @@ namespace WordDeck.Services
             }
             return streak;
         }
+
+                // En uzun seri: tarihler içindeki en uzun aralıksız gün dizisi
+        public static int Longest(IEnumerable<DateTime> studyDates)
+        {
+            var days = studyDates.Select(d => d.Date).Distinct().OrderBy(d => d).ToList();
+            if (days.Count == 0) return 0;
+
+            int longest = 1, current = 1;
+            for (int i = 1; i < days.Count; i++)
+            {
+                // Bir önceki günün ertesi günüyse seri devam ediyor, değilse yeniden başla
+                current = days[i] == days[i - 1].AddDays(1) ? current + 1 : 1;
+                longest = Math.Max(longest, current);
+            }
+            return longest;
+        }
     }
 }

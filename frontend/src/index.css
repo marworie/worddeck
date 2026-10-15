@@ -1456,3 +1456,28 @@ button {
 }
 .chip.family:hover { border-color: var(--primary); }
 [data-theme] .chip.family { background: var(--card); color: var(--text); }
+
+/* ===== İstatistikler ===== */
+.stats-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.stats-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.chart-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.chart-head .section-title { margin-bottom: 12px; }
+.chart-box { position: relative; height: 240px; }
+
+.forgotten-list { list-style: none; margin: 0; padding: 0; }
+.forgotten-row {
+  display: grid;
+  grid-template-columns: 1.3fr 1.5fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.forgotten-row:first-child { border-top: none; }
+
+@media (max-width: 768px) {
+  .stats-cards { grid-template-columns: repeat(2, 1fr); }
+  .stats-two { grid-template-columns: 1fr; }
+  .forgotten-row { grid-template-columns: 1fr auto; }
+  .forgotten-row .hard-meaning { grid-column: 1 / -1; grid-row: 2; }
+}

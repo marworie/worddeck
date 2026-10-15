@@ -112,5 +112,23 @@ namespace WordDeck.Tests
 
             Assert.Equal(3, box);
         }
+
+                [Fact]
+        public void EnUzunSeri_AradakiBoslugaRagmenEnUzunuBulur()
+        {
+            var dates = new[]
+            {
+                Today.AddDays(-10), Today.AddDays(-9), Today.AddDays(-8), Today.AddDays(-7),  // 4 gün
+                Today.AddDays(-3), Today.AddDays(-2)                                          // 2 gün
+            };
+
+            Assert.Equal(4, StreakCalculator.Longest(dates));
+        }
+
+        [Fact]
+        public void EnUzunSeri_HicYoksa0()
+        {
+            Assert.Equal(0, StreakCalculator.Longest(Array.Empty<DateTime>()));
+        }
     }
 }

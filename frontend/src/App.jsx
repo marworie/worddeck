@@ -19,6 +19,7 @@ import Notebook from './Notebook'
 import PhoneticGuide from './PhoneticGuide'
 import Settings from './Settings'
 import { useToast } from './ToastContext'
+import Stats from './Stats'
 
 function App() {
   const showToast = useToast()
@@ -106,6 +107,7 @@ function App() {
           {view === 'home' && <Home onStartStudy={startStudy} onNavigate={navigate} />}
           {view === 'levels' && <Levels onStartStudy={startStudy} />}
           {view === 'study' && <StudySession level={studyLevel} onExit={goHome} />}
+          {view === 'stats' && <Stats />}
           {view === 'hard' && (
             <HardWords
               onBack={goHome}
