@@ -13,6 +13,7 @@ using WordDeck.Repositories;
 using WordDeck.Services;
 
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -45,6 +46,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.AddScoped<IStudyRepository, StudyRepository>();
+builder.Services.AddScoped<IWordListRepository, WordListRepository>();
 
 // JWT kimlik doğrulama
 var jwtSecret = builder.Configuration["JwtSecret"]

@@ -16,12 +16,14 @@ namespace WordDeck.Controllers
         private readonly IWordRepository _words;
         private readonly WordDetailsService _details;
         private readonly WordNetworkService _network;
+        private readonly IWordListRepository _lists;
 
-        public WordsController(IWordRepository words, WordDetailsService details, WordNetworkService network)
+        public WordsController(IWordRepository words, WordDetailsService details, WordNetworkService network, IWordListRepository lists)
         {
             _words = words;
             _details = details;
             _network = network;
+            _lists = lists;
         }
 
         private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -105,6 +107,35 @@ namespace WordDeck.Controllers
             if (word == null) return NotFound(new { message = "Kelime bulunamadı." });
 
             return Ok(await _network.GetNetworkAsync(word.Headword, word.PartOfSpeech));
+        }
+
+                // GET api/Words/search?q=abil&level=B1&pos=noun
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] string? level, [FromQuery] string? pos)
+        {
+            // LIKE'ta % ve _ özel karakter: kullanıcı yazarsa joker gibi davranmasın diye kaçışla
+            string? query = string.IsNullOrWhiteSpace(q) ? null
+                : q.Trim().Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]");
+
+            level = string.IsNullOrWhiteSpace(level) ? null : level.ToUpperInvariant();
+            pos = string.IsNullOrWhiteSpace(pos) ? null : pos.ToLowerInvariant();
+
+            // Hiç filtre yoksa tüm sözlüğü döndürme
+            if (query == null && level == null && pos == null)
+                return Ok(Array.Empty<WordSummaryDto>());
+
+            return Ok(await _lists.SearchAsync(GetUserId(), query, level, pos, 40));
+        }
+
+        // POST api/Words/123/study → kelimeyi çalışmaya ekle (bugünkü kartlarına girer)
+        [HttpPost("{id}/study")]
+        public async Task<IActionResult> AddToStudy(int id)
+        {
+            if (await _words.GetByIdAsync(id) == null)
+                return NotFound(new { message = "Kelime bulunamadı." });
+
+            await _lists.AddToStudyAsync(GetUserId(), id, AppClock.Today);
+            return NoContent();
         }
     }
 }
