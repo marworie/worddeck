@@ -1,7 +1,8 @@
 // ============================================================
 // WordDetailModal.jsx
-// Bir zor kelimeye tıklanınca açılan pencere:
-// anlam, tanım, örnek cümle ve kelime ağı (eş/zıt anlamlılar, ilişkililer, birlikte kullanılanlar).
+// Bir kelimeye tıklanınca açılan pencere: anlam, tanım, örnek cümle,
+// kelime ailesi ve kelime ağı (eş/zıt anlamlılar, ilişkililer, birlikte kullanılanlar).
+// Aile üyesine tıklanınca pencere o kelimeye geçer.
 // ============================================================
 
 import { useEffect, useState } from 'react'
@@ -12,18 +13,22 @@ import { speak as speakText } from './preferences'
 
 // word: listeden gelen kelime (wordId, headword, partOfSpeech, level), onClose: kapat
 function WordDetailModal({ word, onClose }) {
+  // Şu an gösterilen kelime: aile üyesine tıklanınca değişir
+  const [current, setCurrent] = useState(word)
   const [details, setDetails] = useState(null)
   const [network, setNetwork] = useState(null)
 
-  // Detaylar ve kelime ağı aynı anda çekilsin
+  // Gösterilen kelime değişince detaylar ve kelime ağı baştan çekilsin
   useEffect(() => {
-    apiFetch(`/api/Words/${word.wordId}/details`)
+    setDetails(null)
+    setNetwork(null)
+    apiFetch(`/api/Words/${current.wordId}/details`)
       .then(res => res.ok ? res.json() : {})
       .then(setDetails)
-    apiFetch(`/api/Words/${word.wordId}/network`)
+    apiFetch(`/api/Words/${current.wordId}/network`)
       .then(res => res.ok ? res.json() : null)
       .then(setNetwork)
-  }, [word.wordId])
+  }, [current.wordId])
 
   // Esc ile kapat
   useEffect(() => {
@@ -33,14 +38,14 @@ function WordDetailModal({ word, onClose }) {
   }, [onClose])
 
   function speak() {
-    speakText(word.headword)
+    speakText(current.headword)
   }
 
   // Birlikte kullanılanları kalıba oturt: "narrow lane" ya da "run out"
   function collocationText(other) {
     return network.collocationPosition === 'before'
-      ? <><b>{other}</b> {word.headword}</>
-      : <>{word.headword} <b>{other}</b></>
+      ? <><b>{other}</b> {current.headword}</>
+      : <>{current.headword} <b>{other}</b></>
   }
 
   return createPortal(
@@ -48,12 +53,18 @@ function WordDetailModal({ word, onClose }) {
       <div className="modal-box panel" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}>✕</button>
 
+        {/* Aileden başka bir kelimeye geçildiyse ilk kelimeye dönüş */}
+        {current.wordId !== word.wordId && (
+          <button className="btn btn-ghost back-btn" onClick={() => setCurrent(word)}>← {word.headword}</button>
+        )}
+
         <div className="word-detail-head">
-          <h2>{word.headword}</h2>
+          <h2>{current.headword}</h2>
           <button className="speak-btn small" onClick={speak}>🔊</button>
         </div>
         <p className="word-detail-meta">
-          <span className="level-badge">{word.level}</span> {posTr(word.partOfSpeech)}
+          <span className="level-badge">{current.level}</span> {posTr(current.partOfSpeech)}
+          {details?.phonetic && <span className="flashcard-phonetic small"> {details.phonetic}</span>}
         </p>
 
         {/* Anlam, tanım, örnek */}
@@ -75,7 +86,10 @@ function WordDetailModal({ word, onClose }) {
             {details.example && (
               <div className="detail-row">
                 <span className="detail-icon">💬</span>
-                <p className="example">"{details.example}"</p>
+                <div>
+                  <p className="example">"{details.example}"</p>
+                  {details.exampleTr && <p className="definition-tr">{details.exampleTr}</p>}
+                </div>
               </div>
             )}
           </div>
@@ -87,6 +101,20 @@ function WordDetailModal({ word, onClose }) {
           <p className="loading-text">Yükleniyor...</p>
         ) : (
           <div className="network">
+            {network.family.length > 0 && (
+              <div className="network-group">
+                <span className="network-title">Kelime ailesi</span>
+                <div className="chip-list">
+                  {network.family.map(f => (
+                    <button key={f.wordId} className="chip family" onClick={() => setCurrent(f)}>
+                      <b>{f.headword}</b>
+                      <span className="muted small"> {posTr(f.partOfSpeech)}</span>
+                      {f.turkishMeaning && <span className="small"> · {f.turkishMeaning}</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <NetworkGroup title="Eş anlamlılar" items={network.synonyms} />
             <NetworkGroup title="Zıt anlamlılar" items={network.antonyms} />
             <NetworkGroup title="İlişkili kelimeler" items={network.associated} />

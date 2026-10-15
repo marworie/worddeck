@@ -47,6 +47,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.AddScoped<IStudyRepository, StudyRepository>();
 builder.Services.AddScoped<IWordListRepository, WordListRepository>();
+builder.Services.AddScoped<WiktionaryClient>();
 
 // JWT kimlik doğrulama
 var jwtSecret = builder.Configuration["JwtSecret"]

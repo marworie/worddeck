@@ -1446,3 +1446,13 @@ button {
 
 /* Rehber: Türkçe okunuş sade kalsın (yukarıdaki zemin kuralını geri al) */
 [data-theme] .guide-example .phonetic-tr { background: none; padding: 0; }
+
+/* Kelime ailesi: tıklanabilir etiketler */
+.chip.family {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+}
+.chip.family:hover { border-color: var(--primary); }
+[data-theme] .chip.family { background: var(--card); color: var(--text); }

@@ -108,9 +108,20 @@ namespace WordDeck.Dtos
         public int MasteredThisWeek { get; set; }
     }
 
+    // Kelime ailesinden bir üye (tıklanınca o kelimeye geçilebilsin diye kimliği de var)
+    public class FamilyMemberDto
+    {
+        public int WordId { get; set; }
+        public string Headword { get; set; } = string.Empty;
+        public string PartOfSpeech { get; set; } = string.Empty;
+        public string Level { get; set; } = string.Empty;
+        public string? TurkishMeaning { get; set; }
+    }
+
     // Kelime ağı (Datamuse)
     public class WordNetworkDto
     {
+        public List<FamilyMemberDto> Family { get; set; } = new();   // kelime ailesi
         public List<string> Synonyms { get; set; } = new();      // eş anlamlılar
         public List<string> Antonyms { get; set; } = new();      // zıt anlamlılar
         public List<string> Associated { get; set; } = new();    // akla gelen ilişkili kelimeler

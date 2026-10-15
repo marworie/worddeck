@@ -1,4 +1,5 @@
 using WordDeck.Models;
+using WordDeck.Dtos;
 
 namespace WordDeck.Repositories
 {
@@ -10,6 +11,7 @@ namespace WordDeck.Repositories
         Task SaveCustomMeaningAsync(int userId, int wordId, string? meaning, DateTime today);
         Task<HashSet<string>> FilterKnownAsync(IEnumerable<string> words);
         Task SaveExtrasAsync(int id, string? exampleTr, string? phonetic);
+        Task<IEnumerable<FamilyMemberDto>> GetByHeadwordsAsync(IEnumerable<string> headwords);
     }
 
     public class WordRepository : BaseRepository, IWordRepository
@@ -74,5 +76,19 @@ namespace WordDeck.Repositories
                       Phonetic = COALESCE(@Phonetic, Phonetic)
                   WHERE Id = @Id",
                 new { Id = id, ExampleTr = exampleTr, Phonetic = phonetic });
+
+        // Verilen kelimelerden bizim listemizde olanlar (aynı kelimenin birden fazla türü olabilir)
+        public async Task<IEnumerable<FamilyMemberDto>> GetByHeadwordsAsync(IEnumerable<string> headwords)
+        {
+            var list = headwords.ToList();
+            if (list.Count == 0) return Enumerable.Empty<FamilyMemberDto>();
+
+            return await QueryAsync<FamilyMemberDto>(
+                @"SELECT Id AS WordId, Headword, PartOfSpeech, Level, TurkishMeaning
+                  FROM Words
+                  WHERE Headword IN @Words
+                  ORDER BY Level, Headword",
+                new { Words = list });
+        }
     }
 }

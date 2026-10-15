@@ -27,11 +27,13 @@ namespace WordDeck.Services
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<WordDetailsService> _logger;
         private readonly string? _myMemoryEmail;   // varsa günlük çeviri sınırı 5 bin → 50 bin karakter
+        private readonly WiktionaryClient _wiktionary;
 
-        public WordDetailsService(IHttpClientFactory httpClientFactory, ILogger<WordDetailsService> logger, IConfiguration configuration)
+        public WordDetailsService(IHttpClientFactory httpClientFactory, ILogger<WordDetailsService> logger, IConfiguration configuration, WiktionaryClient wiktionary)
         {
             _httpClientFactory = httpClientFactory;
             _logger = logger;
+            _wiktionary = wiktionary;
             _myMemoryEmail = configuration["MyMemoryEmail"];
         }
 
@@ -249,31 +251,14 @@ namespace WordDeck.Services
                 : (pool[0].Definition, null);
         }
                 
-        // Wiktionary sayfasının ham metninden (wikitext) İngilizce fonetiği bulur.
-        // HTML yerine ham metin istiyoruz: render edilmediği için çok daha hızlı geliyor
+        // Wiktionary ham metninin İngilizce bölümünden fonetiği bulur
         private async Task<string?> FetchIpaAsync(string headword)
         {
-            var client = _httpClientFactory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(10);
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("WordDeck/1.0 (https://github.com/marworie/worddeck)");
+            string? wikitext = await _wiktionary.GetWikitextAsync(headword);
+            if (wikitext == null) return "";   // sayfa yok
 
-            var title = Uri.EscapeDataString(headword);
-            var url = "https://en.wiktionary.org/w/api.php?action=query&prop=revisions&rvprop=content" +
-                      $"&rvslots=main&format=json&formatversion=2&titles={title}";
-
-            var response = await client.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-
-            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-
-            // Cevap yapısı: query → pages[0] → revisions[0] → slots → main → content
-            var page = doc.RootElement.GetProperty("query").GetProperty("pages")[0];
-            if (page.TryGetProperty("missing", out _)) return "";   // böyle bir sayfa yok
-
-            string wikitext = page.GetProperty("revisions")[0]
-                .GetProperty("slots").GetProperty("main").GetProperty("content").GetString() ?? "";
-
-            var match = IpaRegex.Match(wikitext);
+            var english = WiktionaryClient.EnglishSection(wikitext) ?? wikitext;
+            var match = IpaRegex.Match(english);
             return match.Success ? match.Groups[1].Value : "";
         }
        

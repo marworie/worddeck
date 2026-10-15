@@ -15,14 +15,16 @@ namespace WordDeck.Services
         private readonly IMemoryCache _cache;
         private readonly ILogger<WordNetworkService> _logger;
         private readonly IWordRepository _words;
+        private readonly WiktionaryClient _wiktionary;
 
         public WordNetworkService(IHttpClientFactory httpClientFactory, IMemoryCache cache,
-            ILogger<WordNetworkService> logger, IWordRepository words)
+            ILogger<WordNetworkService> logger, IWordRepository words, WiktionaryClient wiktionary)
         {
             _httpClientFactory = httpClientFactory;
             _cache = cache;
             _logger = logger;
             _words = words;
+            _wiktionary = wiktionary;
         }
 
         // Datamuse cevabındaki tek bir sonuç
@@ -56,7 +58,8 @@ namespace WordDeck.Services
             var antTask = FetchAsync($"rel_ant={w}");
             var trgTask = FetchAsync($"rel_trg={w}");
             var colTask = FetchAsync(collocationQuery);
-            await Task.WhenAll(synTask, antTask, trgTask, colTask);
+            var familyTask = FetchFamilyAsync(headword);
+            await Task.WhenAll(synTask, antTask, trgTask, colTask, familyTask);
 
             // Eş anlamlı bulunamadıysa "anlamca benzer" kelimelere bak (road, path, alley gibi)
             var synonyms = synTask.Result.Count > 0
@@ -75,6 +78,14 @@ namespace WordDeck.Services
                 Collocations = colTask.Result.Where(IsKnown).Take(6).ToList(),
                 CollocationPosition = position
             };
+
+            // Aileyi kendi listemizle eşleştir: aynı kelimenin farklı türlerinden sadece birini göster
+            var familyWords = await _words.GetByHeadwordsAsync(familyTask.Result);
+            result.Family = familyWords
+                .GroupBy(f => f.Headword.ToLowerInvariant())
+                .Select(g => g.First())
+                .Take(8)
+                .ToList();
 
             _cache.Set(key, result, CacheDuration);
             return result;
@@ -97,6 +108,21 @@ namespace WordDeck.Services
             catch (Exception ex)
             {
                 _logger.LogWarning("Datamuse hatası ({Query}): {Message}", query, ex.Message);
+                return new List<string>();
+            }
+        }
+
+        // Wiktionary'den kelime ailesi. Hata olursa boş liste (aile olmasa da uygulama çalışsın)
+        private async Task<List<string>> FetchFamilyAsync(string headword)
+        {
+            try
+            {
+                var wikitext = await _wiktionary.GetWikitextAsync(headword);
+                return wikitext == null ? new List<string>() : WordFamilyParser.Parse(wikitext, headword);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Wiktionary (aile) hatası ({Word}): {Message}", headword, ex.Message);
                 return new List<string>();
             }
         }
