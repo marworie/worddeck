@@ -9,6 +9,7 @@ namespace WordDeck.Repositories
         Task MarkHardAsync(int userId, int wordId, DateTime today);
         Task<int> SaveResultAsync(int userId, QuizFinishDto dto);
         Task<IEnumerable<QuizResultDto>> GetHistoryAsync(int userId, int top);
+        Task<IEnumerable<PracticeQuestionDto>> GetListQuizWordsAsync(int userId, int listId, int count);
     }
 
     public class QuizRepository : BaseRepository, IQuizRepository
@@ -36,12 +37,16 @@ namespace WordDeck.Repositories
                   VALUES (@UserId, @WordId, @QuestionType, @IsCorrect)",
                 new { UserId = userId, WordId = wordId, QuestionType = questionType, IsCorrect = isCorrect });
 
-        // Sınavda bilinemeyen kelimeyi Zorlandıklarım'a gönder (🔴, seri sıfır)
+        // Hiç çalışılmamışsa (listeden sınav) çalışmaya da eklenir
         public Task MarkHardAsync(int userId, int wordId, DateTime today) =>
             ExecuteAsync(
                 @"UPDATE UserWords
                   SET HardState = 1, HardStreak = 0, HardStateSince = @Today, HardNextCheck = NULL
-                  WHERE UserId = @UserId AND WordId = @WordId",
+                  WHERE UserId = @UserId AND WordId = @WordId;
+
+                  IF @@ROWCOUNT = 0
+                      INSERT INTO UserWords (UserId, WordId, Box, NextReviewDate, HardState, HardStateSince)
+                      VALUES (@UserId, @WordId, 1, @Today, 1, @Today);",
                 new { UserId = userId, WordId = wordId, Today = today });
 
         public Task<int> SaveResultAsync(int userId, QuizFinishDto dto) =>
@@ -58,5 +63,20 @@ namespace WordDeck.Repositories
                   WHERE UserId = @UserId
                   ORDER BY TakenAt DESC",
                 new { UserId = userId, Top = top });
+
+        // Listeden sınav: listedeki kelimelerden rastgele (çalışılmamış olanlar da dahil)
+        public Task<IEnumerable<PracticeQuestionDto>> GetListQuizWordsAsync(int userId, int listId, int count) =>
+            QueryAsync<PracticeQuestionDto>(
+                @"SELECT TOP (@Count) w.Id AS WordId, w.Headword, w.PartOfSpeech, w.Level,
+                         COALESCE(uw.CustomMeaning, w.TurkishMeaning) AS TurkishMeaning,
+                         w.Definition, w.DefinitionTr, w.Example,
+                         CAST(ISNULL(uw.HardState, 0) AS INT) AS HardState,
+                         CAST(ISNULL(uw.HardStreak, 0) AS INT) AS HardStreak
+                  FROM WordListItems li
+                  INNER JOIN Words w ON w.Id = li.WordId
+                  LEFT JOIN UserWords uw ON uw.WordId = w.Id AND uw.UserId = @UserId
+                  WHERE li.ListId = @ListId
+                  ORDER BY NEWID()",
+                new { UserId = userId, ListId = listId, Count = count });
     }
 }

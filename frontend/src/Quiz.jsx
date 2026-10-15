@@ -29,7 +29,7 @@ function formatTime(seconds) {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-function Quiz({ level, count, onExit }) {
+function Quiz({ level, listId, listName, count, onExit }) {
   const { supported: micSupported } = useSpeechRecognition()
   const [questions, setQuestions] = useState(null)
   const [index, setIndex] = useState(0)
@@ -43,14 +43,15 @@ function Quiz({ level, count, onExit }) {
 
   // Soruları yükle; mikrofon yoksa "söyle" sorularını "yaz"a çevir
   useEffect(() => {
-    apiFetch(`/api/Quiz?level=${level}&count=${count}`)
+    const source = listId ? `listId=${listId}` : `level=${level}`
+    apiFetch(`/api/Quiz?${source}&count=${count}`)
       .then(r => (r.ok ? r.json() : []))
       .then(data => {
         setQuestions(data.map(q =>
           q.questionType === 'speaking' && !micSupported ? { ...q, questionType: 'typing' } : q))
         startTime.current = Date.now()   // süre sorular gelince başlasın
       })
-  }, [level, count, micSupported])
+  }, [level, listId, count, micSupported])
 
   // Süre sayacı
   useEffect(() => {
@@ -89,6 +90,7 @@ function Quiz({ level, count, onExit }) {
     setFinished(true)
     const duration = Math.floor((Date.now() - startTime.current) / 1000)
     setElapsed(duration)
+    if (listId) return   // listeden sınavlar geçmişe kaydedilmiyor (geçmiş seviye bazlı)
     await apiFetch('/api/Quiz/finish', {
       method: 'POST',
       body: JSON.stringify({
@@ -121,7 +123,7 @@ function Quiz({ level, count, onExit }) {
     return (
       <div className="panel session-end">
         <h2>Henüz sınav olamazsın</h2>
-        <p>{level} seviyesinde henüz hiç kelime çalışmadın. Önce birkaç kart çalış, sonra kendini test et.</p>
+        <p>{listId ? `"${listName}" listesinde` : `${level} seviyesinde`} henüz soru çıkacak kelime yok.</p>        
         <button className="btn btn-primary" onClick={onExit}>Ana sayfaya dön</button>
       </div>
     )

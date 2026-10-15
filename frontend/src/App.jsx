@@ -12,6 +12,8 @@ import HardPractice from './HardPractice'
 import Quiz from './Quiz'
 import Settings from './Settings'
 import PhoneticGuide from './PhoneticGuide'
+import Search from './Search'
+import Notebook from './Notebook'
 
 function App() {
   const showToast = useToast()
@@ -59,6 +61,8 @@ function App() {
       <header className="app-header">
         <span className="app-logo" onClick={() => setView('home')}>🃏 WordDeck</span>
         <nav className="app-nav">
+          <button className="btn btn-ghost" onClick={() => setView('search')} title="Kelime ara">🔍</button>
+          <button className="btn btn-ghost" onClick={() => setView('notebook')} title="Kelime defterim">📒</button>
           <button className="btn btn-ghost" onClick={() => setView('settings')}>⚙️</button>
           <button className="btn btn-ghost" onClick={handleLogout}>Çıkış</button>
         </nav>
@@ -73,7 +77,15 @@ function App() {
             onOpenPhonetics={() => setView('phonetics')}
           />
         )}
-        {view === 'quiz' && <Quiz level={quizConfig.level} count={quizConfig.count} onExit={() => setView('home')} />}
+          {view === 'quiz' && (
+          <Quiz
+            level={quizConfig.level}
+            listId={quizConfig.listId}
+            listName={quizConfig.listName}
+            count={quizConfig.count}
+            onExit={() => setView(quizConfig.listId ? 'notebook' : 'home')}
+          />
+        )}
         {view === 'study' && <StudySession level={studyLevel} onExit={() => setView('home')} />}
         {view === 'hard' && (
           <HardWords
@@ -84,6 +96,13 @@ function App() {
         {view === 'hardPractice' && <HardPractice level={practiceLevel} onExit={() => setView('hard')} />}
         {view === 'settings' && <Settings onBack={() => setView('home')} />}
         {view === 'phonetics' && <PhoneticGuide onBack={() => setView('home')} />}
+        {view === 'search' && <Search onBack={() => setView('home')} />}
+        {view === 'notebook' && (
+          <Notebook
+            onBack={() => setView('home')}
+            onStartQuiz={(config) => { setQuizConfig(config); setView('quiz') }}
+          />
+        )}
       </main>
     </>
   )

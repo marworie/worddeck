@@ -1040,3 +1040,134 @@ button {
 [data-theme="dark"] .phonetic-tr,
 [data-theme="dark"] .guide-example { background: #1e3a5f; color: #7dd3fc; }
 [data-theme="dark"] .guide-symbol { color: #7dd3fc; }
+
+/* ===== Ortak ===== */
+.center { text-align: center; }
+.danger-text { color: var(--danger); }
+.level-badge.small { padding: 2px 6px; font-size: 11px; }
+
+/* ===== Kelime satırı (arama + listeler) ===== */
+.word-list { list-style: none; margin: 0; padding: 8px; }
+.word-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.5fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.word-row:last-child { border-bottom: none; }
+.word-row:hover { background: #f0f9ff; }
+.word-row-main { display: flex; flex-direction: column; gap: 2px; }
+.word-row-headword { font-weight: 700; font-size: 16px; }
+.word-row-meta { font-size: 12px; color: var(--muted); font-style: italic; }
+.word-row-meaning { color: var(--primary-dark); font-size: 14px; }
+.word-row-actions { display: flex; gap: 4px; align-items: center; }
+
+.word-status { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 6px; white-space: nowrap; }
+.word-status.new { background: #f1f5f9; color: var(--muted); }
+.word-status.learning { background: #e0f2fe; color: var(--primary-dark); }
+.word-status.learned { background: #ccfbf1; color: #0f766e; }
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  font-size: 17px;
+  color: var(--muted);
+}
+.icon-btn:hover { background: #f1f5f9; }
+.icon-btn.active { color: #f59e0b; }
+.icon-btn.danger:hover { color: var(--danger); }
+
+.menu-wrap { position: relative; }
+.dropdown {
+  position: absolute;
+  right: 0;
+  top: 38px;
+  z-index: 50;
+  min-width: 180px;
+  padding: 6px;
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+}
+.dropdown button {
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  text-align: left;
+  font-size: 14px;
+}
+.dropdown button:hover { background: #f0f9ff; }
+
+/* ===== Arama ===== */
+.search-page, .notebook-page { display: flex; flex-direction: column; gap: 16px; }
+.search-box { display: flex; flex-direction: column; gap: 12px; }
+.search-input {
+  padding: 14px 16px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  font-size: 18px;
+  outline: none;
+}
+.search-input:focus { border-color: var(--primary); }
+.search-filters { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pos-select {
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 14px;
+}
+
+/* ===== Kelime defteri ===== */
+.list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.list-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 18px;
+  border: none;
+  text-align: left;
+  color: var(--text);
+  transition: transform 0.15s;
+}
+.list-card:hover { transform: translateY(-2px); }
+.list-card.favorites { border-left: 5px solid #f59e0b; }
+.list-card-name { font-weight: 700; font-size: 16px; }
+
+.new-list-form { display: flex; gap: 8px; padding: 14px; }
+.new-list-form input, .rename-form input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  font-size: 15px;
+}
+.list-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.list-head .page-title { margin: 0; }
+.list-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.rename-form { display: flex; gap: 8px; flex: 1; }
+
+[data-theme="dark"] .word-row:hover,
+[data-theme="dark"] .dropdown button:hover,
+[data-theme="dark"] .icon-btn:hover { background: #334155; }
+[data-theme="dark"] .search-input,
+[data-theme="dark"] .pos-select { background: #0f172a; }
+
+@media (max-width: 768px) {
+  .word-row { grid-template-columns: 1fr auto; }
+  .word-row-meaning { grid-column: 1 / -1; grid-row: 2; }
+  .word-row .word-status, .word-row .state-tag { display: none; }
+}

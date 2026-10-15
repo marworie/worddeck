@@ -15,26 +15,40 @@ namespace WordDeck.Controllers
     {
         private readonly IQuizRepository _quiz;
         private readonly IHardRepository _hard;   // çeldiriciler ve karıştırma kaydı için
+        private readonly IWordListRepository _lists;
 
-        public QuizController(IQuizRepository quiz, IHardRepository hard)
+        public QuizController(IQuizRepository quiz, IHardRepository hard, IWordListRepository lists)
         {
             _quiz = quiz;
             _hard = hard;
+            _lists = lists;
         }
 
         private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
-        // GET api/Quiz?level=B1&count=10
+        // GET api/Quiz?level=B1&count=10   ya da   GET api/Quiz?listId=3&count=10
         [HttpGet]
-        public async Task<IActionResult> GetQuestions([FromQuery] string level, [FromQuery] int count = 10)
+        public async Task<IActionResult> GetQuestions([FromQuery] string? level, [FromQuery] int? listId, [FromQuery] int count = 10)
         {
-            level = (level ?? "").ToUpperInvariant();
-            if (!Levels.All.Contains(level))
-                return BadRequest(new { message = "Geçersiz seviye." });
+            int userId = GetUserId();
+            count = Math.Clamp(count, 5, 50);
 
-            count = Math.Clamp(count, 5, 50);   // 5 ile 50 arasına sıkıştır
+            IEnumerable<PracticeQuestionDto> words;
+            if (listId.HasValue)
+            {
+                // Başkasının listesinden sınav olunamasın
+                if (await _lists.GetListAsync(userId, listId.Value) == null)
+                    return NotFound(new { message = "Liste bulunamadı." });
+                words = await _quiz.GetListQuizWordsAsync(userId, listId.Value, count);
+            }
+            else
+            {
+                level = (level ?? "").ToUpperInvariant();
+                if (!Levels.All.Contains(level))
+                    return BadRequest(new { message = "Geçersiz seviye." });
+                words = await _quiz.GetQuizWordsAsync(userId, level, count);
+            }
 
-            var words = await _quiz.GetQuizWordsAsync(GetUserId(), level, count);
             var questions = new List<PracticeQuestionDto>();
 
             foreach (var q in words)
