@@ -147,24 +147,13 @@ namespace WordDeck.Services
             // puana göre sırala, tekrarları sil, en fazla 3 tane al
             var meanings = candidates
                 .Select(c => (Text: CleanHtml(c.Text), c.Score))
-                .Where(c => IsUsableTranslation(c.Text, headword) && IsUsableTranslation(c.Text, query))
-                .OrderByDescending(c => c.Score)
+                .Where(c => TranslationFilter.IsUsableWord(c.Text, headword) && TranslationFilter.IsUsableWord(c.Text, query))                .OrderByDescending(c => c.Score)
                 .Select(c => c.Text.Trim().TrimEnd('.').ToLower(Turkish))
                 .Distinct()
                 .Take(3)
                 .ToList();
 
             return meanings.Count > 0 ? string.Join(", ", meanings) : null;
-        }
-        // Çöp çevirileri ele: boş, çok kısa, kelimenin kendisi, "na" gibi
-        private static bool IsUsableTranslation(string text, string headword)
-        {
-            text = text.Trim();
-            if (text.Length < 2) return false;
-            if (text.Equals(headword, StringComparison.OrdinalIgnoreCase)) return false;
-
-            string[] junk = { "na", "n/a", "-", "..." };
-            return !junk.Contains(text.ToLowerInvariant());
         }
 
         // Cümle çevirisi (tanım için): eşleşme aramaya gerek yok, ana sonucu al
@@ -182,7 +171,7 @@ namespace WordDeck.Services
             string? translated = doc.RootElement.GetProperty("responseData").GetProperty("translatedText").GetString();
             ThrowIfQuotaExceeded(translated);
 
-            return string.IsNullOrWhiteSpace(translated) ? null : translated.Trim();
+            return TranslationFilter.IsUsableSentence(translated) ? translated!.Trim() : null;       
         }
 
         // ============ Wiktionary (tanım + örnek) ============
