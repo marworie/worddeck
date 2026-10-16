@@ -7,6 +7,8 @@
 import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
 import LevelList from './LevelList'
+import PlacementCard from './PlacementCard'
+
 
 function Home({ onStartStudy, onNavigate }) {
   const [progress, setProgress] = useState(null)
@@ -55,6 +57,8 @@ function Home({ onStartStudy, onNavigate }) {
             Çalışmaya başla <i className="ti ti-arrow-right" aria-hidden="true" />
           </button>
         </div>
+
+        <PlacementCard onNavigate={onNavigate} onStartStudy={onStartStudy} />
 
         <div className="dash-stats">
           <div className="stat-card">

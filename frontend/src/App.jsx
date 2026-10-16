@@ -20,6 +20,8 @@ import PhoneticGuide from './PhoneticGuide'
 import Settings from './Settings'
 import { useToast } from './ToastContext'
 import Stats from './Stats'
+import PlacementTest from './PlacementTest'
+
 
 function App() {
   const showToast = useToast()
@@ -134,6 +136,7 @@ function App() {
           {view === 'notebook' && <Notebook onBack={goHome} onStartQuiz={startQuiz} />}
           {view === 'phonetics' && <PhoneticGuide onBack={goHome} />}
           {view === 'settings' && <Settings onBack={goHome} />}
+          {view === 'placement' && <PlacementTest onExit={goHome} onStartLevel={startStudy} />}
         </main>
       </div>
     </div>

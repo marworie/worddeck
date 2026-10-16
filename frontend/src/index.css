@@ -1486,3 +1486,79 @@ button {
 @media (display-mode: standalone) {
   .topbar { padding-top: calc(10px + env(safe-area-inset-top)); }
 }
+
+/* ============ Seviye belirleme testi ============ */
+.placement {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.placement h2, .placement h3 { margin: 0; }
+
+.placement-levels { display: flex; gap: 6px; }
+.placement-level {
+  flex: 1;
+  text-align: center;
+  padding: 6px 0;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.placement-level.done { background: var(--success); border-color: var(--success); color: #fff; }
+.placement-level.active { border-color: var(--primary); color: var(--primary); }
+
+.placement-prompt { font-size: 1.15rem; line-height: 1.6; margin: 0; }
+.placement-prompt.big { font-size: 1.8rem; font-weight: 700; text-align: center; }
+.placement-prompt .blank {
+  color: var(--primary);
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.placement-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.placement-option {
+  padding: 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.placement-option:hover { border-color: var(--primary); transform: translateY(-1px); }
+.placement-skip { align-self: center; }
+
+.placement-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.placement-result {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1;
+}
+.placement-history { list-style: none; padding: 0; margin: 0; display: flex; gap: 14px; flex-wrap: wrap; }
+
+/* Ana sayfa kartı */
+.placement-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.placement-card h3 { margin: 0 0 4px; }
+.placement-card p { margin: 0; }
+.placement-card-level { font-size: 2rem; font-weight: 800; color: var(--primary); }
+
+@media (max-width: 560px) {
+  .placement-options { grid-template-columns: 1fr; }
+}
