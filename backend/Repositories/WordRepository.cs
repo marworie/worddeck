@@ -12,6 +12,8 @@ namespace WordDeck.Repositories
         Task<HashSet<string>> FilterKnownAsync(IEnumerable<string> words);
         Task SaveExtrasAsync(int id, string? exampleTr, string? phonetic);
         Task<IEnumerable<FamilyMemberDto>> GetByHeadwordsAsync(IEnumerable<string> headwords);
+        Task<Word?> GetNextForBackfillAsync();
+        Task SaveDictionaryAsync(int id, string? definition, string? example);
     }
 
     public class WordRepository : BaseRepository, IWordRepository
@@ -90,5 +92,26 @@ namespace WordDeck.Repositories
                   ORDER BY Level, Headword",
                 new { Words = list });
         }
+        
+        // Sıradaki doldurulacak kelime. Sıra numarası TÜM kelimeler üzerinden verilir (sabit kalsın),
+        // filtre sonra uygulanır: böylece seviyeler sırayla gelir (A1, A2, B1, B2, C1, A1, ...)
+        public Task<Word?> GetNextForBackfillAsync() =>
+            QuerySingleOrDefaultAsync<Word>(
+                @"SELECT TOP 1 * FROM (
+                      SELECT *, ROW_NUMBER() OVER (PARTITION BY Level ORDER BY Id) AS Rn
+                      FROM Words
+                  ) x
+                  WHERE DictionaryFetchedAt IS NULL AND Definition IS NULL
+                  ORDER BY Rn, Level");
+
+        // Tanım ve örneği kaydet, kelimeyi "denendi" diye işaretle (sözlükte yoksa da)
+        public Task SaveDictionaryAsync(int id, string? definition, string? example) =>
+            ExecuteAsync(
+                @"UPDATE Words
+                  SET Definition = COALESCE(@Definition, Definition),
+                      Example = COALESCE(@Example, Example),
+                      DictionaryFetchedAt = SYSDATETIME()
+                  WHERE Id = @Id",
+                new { Id = id, Definition = definition, Example = example });
     }
 }

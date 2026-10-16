@@ -58,6 +58,13 @@ namespace WordDeck.Services
             return new WordDetailsResult(meaningOk && dictOk && defTrOk, meaning, dict.Definition, definitionTr, dict.Example);
         }
 
+        // Sadece sözlük (Wiktionary): arka plan doldurma için. Çeviri kotasını harcamaz
+        public async Task<(bool Ok, string? Definition, string? Example)> FetchDictionaryOnlyAsync(string headword, string partOfSpeech)
+        {
+            var (ok, dict) = await TryAsync(() => FetchDefinitionAsync(headword, partOfSpeech), "Wiktionary", headword);
+            return (ok, dict.Definition, dict.Example);
+        }
+
         // Örnek cümlenin Türkçesi (hata olursa null)
         public async Task<string?> TranslateExampleAsync(string example)
         {

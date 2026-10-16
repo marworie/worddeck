@@ -76,6 +76,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddScoped<WordNetworkService>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
+builder.Services.AddHostedService<DictionaryBackfillService>();
 
 var app = builder.Build();
 
