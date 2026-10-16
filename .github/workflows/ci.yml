@@ -16,7 +16,9 @@ jobs:
 
       - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: |
+            8.0.x
+            10.0.x
 
       # Test projesi backend'i referans aldığı için ikisi birlikte derlenir
       - name: Restore
