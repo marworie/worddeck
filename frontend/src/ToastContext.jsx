@@ -24,5 +24,6 @@ export function ToastProvider({ children }) {
     </ToastContext.Provider>
   )
 }
-
+// Context ile hook'u aynı dosyada tutmak bilinçli: bu satır için fast refresh kuralını kapat
+// eslint-disable-next-line react-refresh/only-export-components
 export const useToast = () => useContext(ToastContext)

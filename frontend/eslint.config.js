@@ -17,5 +17,9 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Effect başında yükleniyor durumunu sıfırlamak bilinçli bir tercih: hata değil uyarı
+      'react-hooks/set-state-in-effect': 'warn',
+    },
   },
 ])

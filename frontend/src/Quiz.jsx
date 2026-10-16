@@ -37,8 +37,10 @@ function Quiz({ level, listId, listName, count, onExit }) {
   const [mistakes, setMistakes] = useState([])
   const [elapsed, setElapsed] = useState(0)
   const [finished, setFinished] = useState(false)
-  const startTime = useRef(Date.now())
-
+  const startTime = useRef(0)
+  
+  // Başlangıç zamanını render'da değil, sınav ekrana gelince bir kez al
+  useEffect(() => { startTime.current = Date.now() }, [])
   const ready = useQuestionDetails(questions, setQuestions, index)
 
   // Soruları yükle; mikrofon yoksa "söyle" sorularını "yaz"a çevir
