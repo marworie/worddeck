@@ -17,9 +17,25 @@ function WordDetailModal({ word, onClose }) {
   const [current, setCurrent] = useState(word)
   const [details, setDetails] = useState(null)
   const [network, setNetwork] = useState(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editValue, setEditValue] = useState('')
+
+  async function saveMeaning(e) {
+    e.preventDefault()
+    const response = await apiFetch(`/api/Words/${current.wordId}/meaning`, {
+      method: 'PUT',
+      body: JSON.stringify({ meaning: editValue })
+    })
+    if (response.ok) {
+      const data = await response.json()
+      setDetails(prev => ({ ...prev, ...data }))
+      setIsEditing(false)
+    }
+  }
 
   // Gösterilen kelime değişince detaylar ve kelime ağı baştan çekilsin
   useEffect(() => {
+    setIsEditing(false)
     setDetails(null)
     setNetwork(null)
     apiFetch(`/api/Words/${current.wordId}/details`)
@@ -74,7 +90,33 @@ function WordDetailModal({ word, onClose }) {
           <div className="word-detail-section">
             <div className="detail-row">
               <span className="lang-chip tr">TR</span>
-              <p className="tr-meaning">{details.turkishMeaning || '—'}</p>
+              {isEditing ? (
+                <form className="meaning-edit" onSubmit={saveMeaning}>
+                  <input
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    maxLength={300}
+                    placeholder="Boş bırakırsan otomatik çeviri kullanılır"
+                    autoFocus
+                  />
+                  <button type="submit" className="btn btn-primary">Kaydet</button>
+                  <button type="button" className="btn btn-ghost" onClick={() => setIsEditing(false)}>Vazgeç</button>
+                </form>
+              ) : (
+                <>
+                  <p className="tr-meaning">
+                    {details.turkishMeaning || '—'}
+                    {details.isCustomMeaning && <span className="custom-tag">senin</span>}
+                  </p>
+                  <button
+                    className="edit-meaning-btn"
+                    onClick={() => { setEditValue(details.turkishMeaning || ''); setIsEditing(true) }}
+                    title="Anlamı düzelt"
+                  >
+                    ✏️
+                  </button>
+                </>
+              )}
             </div>
             <div className="detail-row">
               <span className="lang-chip en">EN</span>

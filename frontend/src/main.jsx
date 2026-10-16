@@ -14,3 +14,8 @@ createRoot(document.getElementById('root')).render(
     </ToastProvider>
   </StrictMode>
 )
+
+// Service worker'ı sadece canlıda kaydet: geliştirmede eski dosyalar önbellekte takılmasın
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'))
+}

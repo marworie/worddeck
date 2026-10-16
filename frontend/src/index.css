@@ -1481,3 +1481,8 @@ button {
   .forgotten-row { grid-template-columns: 1fr auto; }
   .forgotten-row .hard-meaning { grid-column: 1 / -1; grid-row: 2; }
 }
+
+/* Ana ekrana yüklenip açıldığında (PWA) üst çentik/durum çubuğu payı */
+@media (display-mode: standalone) {
+  .topbar { padding-top: calc(10px + env(safe-area-inset-top)); }
+}
