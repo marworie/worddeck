@@ -1,4 +1,5 @@
 # WordDeck
+![CI](https://github.com/marworie/worddeck/actions/workflows/ci.yml/badge.svg)
 
 İngilizce kelime öğrenmek için kart (flashcard) uygulaması. A1–C1 seviyelerinde kelimeler, Leitner kutu sistemiyle aralıklı tekrar.
 
