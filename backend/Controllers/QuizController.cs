@@ -43,38 +43,37 @@ namespace WordDeck.Controllers
                 words = await _quiz.GetQuizWordsAsync(userId, level, count);
             }
 
-                       var wordList = words.ToList();
+            var wordList = words.ToList();
 
             // Çeldirici havuzları: her seviye için bir kez çek (listeden sınavda seviyeler karışık olabilir)
             var pools = new Dictionary<string, List<WordInfo>>();
             foreach (var lvl in wordList.Select(w => w.Level).Distinct())
                 pools[lvl] = (await _placement.GetPoolAsync(lvl, 300)).ToList();
 
+                        var sections = QuizSectionBuilder.AssignSections(wordList.Count);
             var questions = new List<PracticeQuestionDto>();
-            foreach (var q in wordList)
-            {
-                // Şimdilik hepsi seviye testindeki gibi çoktan seçmeli.
-                // (Okuma/dinleme/yazma/konuşma bölümleri sonra eklenecek)
-                var info = new WordInfo(q.WordId, q.Headword, q.PartOfSpeech, q.TurkishMeaning, q.Definition, q.Example);
-                var built = ChoiceQuestionBuilder.Build(info, pools[q.Level]);
 
-                if (built != null)
-                {
-                    q.QuestionType = QuestionTypes.Choice;
-                    q.ChoiceType = built.Type;
-                    q.Prompt = built.Prompt;
-                    q.Options = built.Options;
-                }
-                else
-                {
-                    // Kaliteli şık kurulamadı: anlam göstermeyen dinleme sorusu (bozuk çeviri ekrana çıkmasın)
-                    q.QuestionType = QuestionTypes.Listening;
-                }
+            for (int i = 0; i < wordList.Count; i++)
+            {
+                var q = wordList[i];
+                var info = new WordInfo(q.WordId, q.Headword, q.PartOfSpeech, q.TurkishMeaning, q.Definition, q.Example);
+                var built = QuizSectionBuilder.BuildWithFallback(sections[i], info, pools[q.Level]);
+                if (built == null) continue;   // bu kelimeyle düzgün soru kurulamadı: atla
+
+                q.Section = built.Section;
+                q.QuestionType = built.QuestionType;
+                q.ChoiceType = built.ChoiceType;
+                q.Prompt = built.Prompt;
+                q.Options = built.Options;
+                q.Audio = built.Audio;
+                q.Hint = built.Hint;
+                if (built.QuestionType == QuestionTypes.Cloze) q.ClozeSentence = built.Prompt;
 
                 questions.Add(q);
             }
 
-            return Ok(questions);
+            // Bölümler sırayla gelsin: okuma, dinleme, yazma, konuşma
+            return Ok(questions.OrderBy(q => Array.IndexOf(QuizSections.All, q.Section)));
         }
 
         // POST api/Quiz/answer → yanlışsa kelime Zorlandıklarım'a eklenir

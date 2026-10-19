@@ -22,6 +22,14 @@ const QUESTION_COMPONENTS = {
   speaking: SpeakingQuestion
 }
 
+// Sınav bölümleri: giriş ekranı ve sonuçta kullanılır
+const SECTIONS = {
+  reading: { icon: '📖', title: 'Okuma', desc: 'Cümleleri ve tanımları oku, doğru kelimeyi seç.' },
+  listening: { icon: '🎧', title: 'Dinleme', desc: 'Cümleyi dinle, duyduğun kelimeyi seç. Sesini açmayı unutma!' },
+  writing: { icon: '✍️', title: 'Yazma', desc: 'Boşluğa ya da anlama uyan kelimeyi yaz.' },
+  speaking: { icon: '🎤', title: 'Konuşma', desc: 'Kelimeyi mikrofona söyle.' }
+}
+
 // 75 saniye → "1:15"
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60)
@@ -37,6 +45,8 @@ function Quiz({ level, listId, listName, count, onExit }) {
   const [mistakes, setMistakes] = useState([])
   const [elapsed, setElapsed] = useState(0)
   const [finished, setFinished] = useState(false)
+  const [answers, setAnswers] = useState([])          // { section, correct }: bölüm bazlı sonuç için
+  const [showIntro, setShowIntro] = useState(true)    // bölüm giriş ekranı
   const startTime = useRef(0)
   
   // Başlangıç zamanını render'da değil, sınav ekrana gelince bir kez al
@@ -49,8 +59,10 @@ function Quiz({ level, listId, listName, count, onExit }) {
     apiFetch(`/api/Quiz?${source}&count=${count}`)
       .then(r => (r.ok ? r.json() : []))
       .then(data => {
-        setQuestions(data.map(q =>
-          q.questionType === 'speaking' && !micSupported ? { ...q, questionType: 'typing' } : q))
+          setQuestions(data.map(q =>
+          q.questionType === 'speaking' && !micSupported
+            ? { ...q, questionType: 'typing', section: q.section === 'speaking' ? 'writing' : q.section }
+            : q))
         startTime.current = Date.now()   // süre sorular gelince başlasın
       })
   }, [level, listId, count, micSupported])
@@ -85,6 +97,7 @@ function Quiz({ level, listId, listName, count, onExit }) {
         type: question.questionType
       }])
     }
+    setAnswers(prev => [...prev, { section: question.section, correct: data.correct }])
     setFlash({ correct: data.correct })
   }
 
@@ -106,8 +119,12 @@ function Quiz({ level, listId, listName, count, onExit }) {
 
   function goNext() {
     setFlash(null)
-    if (index + 1 >= questions.length) finish()
-    else setIndex(i => i + 1)
+    if (index + 1 >= questions.length) {
+      finish()
+      return
+    }
+    if (questions[index + 1].section !== questions[index].section) setShowIntro(true)
+    setIndex(i => i + 1)
   }
 
   // Geri bildirimden sonra otomatik geç: doğruda kısa, yanlışta doğru cevabı okuyabilmek için biraz daha uzun
@@ -142,6 +159,21 @@ function Quiz({ level, listId, listName, count, onExit }) {
         <p className="session-score">{correct} / {total} · %{pct}</p>
         <p className="muted">Süre: {formatTime(elapsed)}</p>
 
+        {/* Bölüm bazlı sonuç */}
+        <div className="quiz-sections">
+          {[...new Set(answers.map(a => a.section))].filter(s => SECTIONS[s]).map(s => {
+            const list = answers.filter(a => a.section === s)
+            const ok = list.filter(a => a.correct).length
+            return (
+              <div key={s} className="quiz-section-score">
+                <span className="quiz-section-icon">{SECTIONS[s].icon}</span>
+                <b>{SECTIONS[s].title}</b>
+                <span>{ok} / {list.length}</span>
+              </div>
+            )
+          })}
+        </div>
+
         {mistakes.length > 0 && (
           <div className="quiz-mistakes">
             <p className="network-title">Yanlışların ({mistakes.length})</p>
@@ -157,6 +189,25 @@ function Quiz({ level, listId, listName, count, onExit }) {
         )}
 
         <button className="btn btn-primary" onClick={onExit}>Ana sayfaya dön</button>
+      </div>
+    )
+  }
+
+  // Bölüm giriş ekranı
+  if (showIntro && SECTIONS[question.section]) {
+    const info = SECTIONS[question.section]
+    const sectionList = [...new Set(questions.map(q => q.section))]
+    const count = questions.filter(q => q.section === question.section).length
+    return (
+      <div className="session">
+        <div className="panel quiz-section-intro">
+          <span className="quiz-section-icon big">{info.icon}</span>
+          <p className="muted">Bölüm {sectionList.indexOf(question.section) + 1} / {sectionList.length}</p>
+          <h2>{info.title}</h2>
+          <p>{info.desc}</p>
+          <p className="muted small">{count} soru</p>
+          <button className="btn btn-primary" onClick={() => setShowIntro(false)}>Başla</button>
+        </div>
       </div>
     )
   }
@@ -180,7 +231,11 @@ function Quiz({ level, listId, listName, count, onExit }) {
       </div>
 
       <div className="panel q-card">
-        <span className="q-type-tag align-start">{QUESTION_TYPES_TR[question.questionType]}</span>
+        <span className="q-type-tag align-start">
+          {SECTIONS[question.section]
+            ? `${SECTIONS[question.section].icon} ${SECTIONS[question.section].title}`
+            : QUESTION_TYPES_TR[question.questionType]}
+        </span>
 
         {!ready ? (
           <p className="loading-text">Yükleniyor...</p>

@@ -26,12 +26,35 @@ const CHOICE_TITLES = {
   cloze: 'Boşluğa hangisi gelir?',
   definition: 'Bu tanım hangi kelimeye ait?',
   'tr-en': 'Bu kelimenin İngilizcesi hangisi?',
-  'en-tr': 'Bu kelime ne demek?'
+  'en-tr': 'Bu kelime ne demek?',
+  listen: 'Hangi kelimeyi duydun?'
+}
+
+// Dinleme: açılınca metni bir kez okur, istenirse tekrar
+function ListenPrompt({ audio }) {
+  useEffect(() => { speak(audio) }, [audio])
+  return <button className="q-listen-btn" onClick={() => speak(audio)}>🔊 Tekrar dinle</button>
+}
+
+// Sınavdaki yazma/konuşma sorusunun metni: boşluklu cümle ya da temiz Türkçe anlam
+function QuizPrompt({ text }) {
+  if (text.includes('_____')) {
+    const parts = text.split('_____')
+    return (
+      <p className="q-cloze">
+        {parts.map((part, i) => (
+          <span key={i}>{part}{i < parts.length - 1 && <span className="q-blank">_____</span>}</span>
+        ))}
+      </p>
+    )
+  }
+  return <p className="q-big">{text}</p>
 }
 
 // Yeni çoktan seçmeli sorunun metni: boşluk vurgulu cümle, tanım ya da tek kelime
 function ChoicePrompt({ question }) {
   const { choiceType, prompt } = question
+  if (choiceType === 'listen') return <ListenPrompt audio={question.audio} />
   if (choiceType === 'cloze') {
     const parts = prompt.split('_____')
     return (
@@ -126,11 +149,14 @@ export function ChoiceQuestion({ question, answered, onAnswer }) {
 
 // ===== 2. Boşluk doldurma: örnek cümlede kelime gizli =====
 export function ClozeQuestion({ question, answered, onAnswer }) {
+  // Sınavda sadece temiz ipucu (hint), Zorlandıklarım'da Türkçe anlam
+  const hint = question.section ? question.hint : question.turkishMeaning
+
   return (
     <>
       <p className="q-instruction">Boşluğa gelen kelimeyi yaz</p>
       <p className="q-cloze">{question.clozeSentence}</p>
-      {question.turkishMeaning && <p className="q-small-hint">İpucu: {question.turkishMeaning}</p>}
+      {hint && <p className="q-small-hint">İpucu: {hint}</p>}
       <AnswerInput answer={question.headword} answered={answered} onAnswer={onAnswer} />
     </>
   )
@@ -140,8 +166,8 @@ export function ClozeQuestion({ question, answered, onAnswer }) {
 export function TypingQuestion({ question, answered, onAnswer }) {
   return (
     <>
-      <p className="q-instruction">Bu anlama gelen kelimeyi yaz</p>
-      <MeaningPrompt question={question} />
+      <p className="q-instruction">{question.prompt?.includes('_____') ? 'Boşluğa gelen kelimeyi yaz' : 'Bu anlama gelen kelimeyi yaz'}</p>
+      {question.prompt ? <QuizPrompt text={question.prompt} /> : <MeaningPrompt question={question} />}
       <AnswerInput answer={question.headword} answered={answered} onAnswer={onAnswer} />
     </>
   )
@@ -185,8 +211,8 @@ export function SpeakingQuestion({ question, answered, onAnswer }) {
 
   return (
     <>
-      <p className="q-instruction">Bu anlama gelen kelimeyi söyle</p>
-      <MeaningPrompt question={question} />
+      <p className="q-instruction">{question.prompt?.includes('_____') ? 'Boşluğa gelen kelimeyi söyle' : 'Bu anlama gelen kelimeyi söyle'}</p>
+      {question.prompt ? <QuizPrompt text={question.prompt} /> : <MeaningPrompt question={question} />}
       <button
         className={`q-mic-btn ${listening ? 'listening' : ''}`}
         onClick={handleMic}

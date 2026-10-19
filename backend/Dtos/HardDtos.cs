@@ -44,6 +44,9 @@ namespace WordDeck.Dtos
         public string? ChoiceType { get; set; }          // cloze / definition / tr-en / en-tr
         public string? Prompt { get; set; }
         public List<ChoiceOption>? Options { get; set; }
+        public string? Section { get; set; }   // reading / listening / writing / speaking (sınav)
+        public string? Audio { get; set; }     // dinlemede seslendirilecek metin
+        public string? Hint { get; set; }      // yazmada temiz Türkçe ipucu
     }
 
     // Zor kelime sorusuna verilen cevap

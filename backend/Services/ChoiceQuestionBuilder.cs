@@ -9,6 +9,7 @@ namespace WordDeck.Services
         public const string Definition = "definition";   // İngilizce tanım → İngilizce şıklar
         public const string TrToEn = "tr-en";            // Türkçe anlam → İngilizce şıklar
         public const string EnToTr = "en-tr";            // İngilizce kelime → Türkçe şıklar
+        public const string Listen = "listen";           // seslendirilen kelime → İngilizce şıklar
     }
 
     // Soru üretmek için gereken kelime bilgisi
@@ -39,6 +40,30 @@ namespace WordDeck.Services
             if (string.IsNullOrWhiteSpace(meaning)) return null;
             string first = meaning.Split(',', ';')[0].Trim();
             return first.Length is > 0 and <= MaxMeaningLength && first != "—" ? first : null;
+        }
+
+                // "dram" ↔ "drama", "taksi" ↔ "taxi": çeviri kelimeye çok benziyorsa soru cevabı ele verir
+        public static bool LooksAlike(string a, string b)
+        {
+            a = a.ToLowerInvariant();
+            b = b.ToLowerInvariant();
+            if (a.Contains(b) || b.Contains(a)) return true;
+            return Levenshtein(a, b) <= 2;
+        }
+
+        // Bir kelimeyi diğerine çevirmek için kaç harf değişikliği gerekir
+        private static int Levenshtein(string a, string b)
+        {
+            var d = new int[a.Length + 1, b.Length + 1];
+            for (int i = 0; i <= a.Length; i++) d[i, 0] = i;
+            for (int j = 0; j <= b.Length; j++) d[0, j] = j;
+            for (int i = 1; i <= a.Length; i++)
+                for (int j = 1; j <= b.Length; j++)
+                {
+                    int cost = a[i - 1] == b[j - 1] ? 0 : 1;
+                    d[i, j] = Math.Min(Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1), d[i - 1, j - 1] + cost);
+                }
+            return d[a.Length, b.Length];
         }
 
         // Tanım soruya uygun mu: makul uzunlukta, nadir anlam değil, cevabı içinde ele vermiyor
