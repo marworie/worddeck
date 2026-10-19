@@ -1562,3 +1562,7 @@ button {
 @media (max-width: 560px) {
   .placement-options { grid-template-columns: 1fr; }
 }
+
+/* Sınavdaki yeni çoktan seçmeli sorular */
+.q-blank { color: var(--primary); font-weight: 700; letter-spacing: 1px; }
+.q-big { font-size: 1.6rem; font-weight: 700; text-align: center; margin: 8px 0; }

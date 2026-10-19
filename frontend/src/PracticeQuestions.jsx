@@ -21,6 +21,31 @@ function MeaningPrompt({ question }) {
   )
 }
 
+// Yeni çoktan seçmeli soruların başlıkları (sınav)
+const CHOICE_TITLES = {
+  cloze: 'Boşluğa hangisi gelir?',
+  definition: 'Bu tanım hangi kelimeye ait?',
+  'tr-en': 'Bu kelimenin İngilizcesi hangisi?',
+  'en-tr': 'Bu kelime ne demek?'
+}
+
+// Yeni çoktan seçmeli sorunun metni: boşluk vurgulu cümle, tanım ya da tek kelime
+function ChoicePrompt({ question }) {
+  const { choiceType, prompt } = question
+  if (choiceType === 'cloze') {
+    const parts = prompt.split('_____')
+    return (
+      <p className="q-cloze">
+        {parts.map((part, i) => (
+          <span key={i}>{part}{i < parts.length - 1 && <span className="q-blank">_____</span>}</span>
+        ))}
+      </p>
+    )
+  }
+  if (choiceType === 'definition') return <p className="q-definition">{prompt}</p>
+  return <p className="q-big">{prompt}</p>
+}
+
 // Yazarak cevaplanan sorularda ortak giriş kutusu (+ isteğe bağlı harf ipucu)
 function AnswerInput({ answer, answered, onAnswer, allowHint = true }) {
   const [value, setValue] = useState('')
@@ -61,29 +86,36 @@ function AnswerInput({ answer, answered, onAnswer, allowHint = true }) {
   )
 }
 
-// ===== 1. Çoktan seçmeli: anlam verilir, 4 kelimeden doğrusu seçilir =====
+// ===== 1. Çoktan seçmeli =====
+// Sınavda soru ve şıklar sunucudan hazır gelir (options); Zorlandıklarım'da eski şekilde (choices)
 export function ChoiceQuestion({ question, answered, onAnswer }) {
   const [chosen, setChosen] = useState(null)
+  const isNew = Array.isArray(question.options)
 
-  function choose(choice) {
+  // İki biçimi tek tipe çevir: { id, text }
+  const options = isNew
+    ? question.options
+    : question.choices.map(c => ({ id: c.wordId, text: c.headword }))
+
+  function choose(option) {
     if (answered) return
-    setChosen(choice.wordId)
-    onAnswer(choice.wordId === question.wordId, { chosenWordId: choice.wordId })
+    setChosen(option.id)
+    onAnswer(option.id === question.wordId, { chosenWordId: option.id })
   }
 
   return (
     <>
-      <p className="q-instruction">Bu anlama gelen kelime hangisi?</p>
-      <MeaningPrompt question={question} />
+      <p className="q-instruction">{isNew ? CHOICE_TITLES[question.choiceType] : 'Bu anlama gelen kelime hangisi?'}</p>
+      {isNew ? <ChoicePrompt question={question} /> : <MeaningPrompt question={question} />}
       <div className="q-choices">
-        {question.choices.map(c => {
+        {options.map(o => {
           // Cevaplandıktan sonra doğru şık yeşil, yanlış seçilen kırmızı
           let cls = ''
-          if (answered && c.wordId === question.wordId) cls = 'correct'
-          else if (answered && c.wordId === chosen) cls = 'wrong'
+          if (answered && o.id === question.wordId) cls = 'correct'
+          else if (answered && o.id === chosen) cls = 'wrong'
           return (
-            <button key={c.wordId} className={`q-choice ${cls}`} onClick={() => choose(c)} disabled={answered}>
-              {c.headword}
+            <button key={o.id} className={`q-choice ${cls}`} onClick={() => choose(o)} disabled={answered}>
+              {o.text}
             </button>
           )
         })}

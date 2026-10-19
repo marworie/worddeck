@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using WordDeck.Services;
 
 namespace WordDeck.Dtos
 {
@@ -39,6 +40,10 @@ namespace WordDeck.Dtos
         public string QuestionType { get; set; } = string.Empty;
         public string? ClozeSentence { get; set; }       // sadece boşluk doldurmada
         public List<ChoiceDto>? Choices { get; set; }    // sadece çoktan seçmelide
+        // Yeni çoktan seçmeli (sınav): soru ve şıklar sunucuda hazırlanır
+        public string? ChoiceType { get; set; }          // cloze / definition / tr-en / en-tr
+        public string? Prompt { get; set; }
+        public List<ChoiceOption>? Options { get; set; }
     }
 
     // Zor kelime sorusuna verilen cevap

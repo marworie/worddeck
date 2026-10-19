@@ -14,15 +14,9 @@ namespace WordDeck.Controllers
     public class QuizController : ControllerBase
     {
         private readonly IQuizRepository _quiz;
-        private readonly IHardRepository _hard;   // çeldiriciler ve karıştırma kaydı için
+        private readonly IHardRepository _hard;   // karıştırma kaydı için
         private readonly IWordListRepository _lists;
-
-        public QuizController(IQuizRepository quiz, IHardRepository hard, IWordListRepository lists)
-        {
-            _quiz = quiz;
-            _hard = hard;
-            _lists = lists;
-        }
+        private readonly IPlacementRepository _placement;   // çeldirici havuzu
 
         private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
@@ -49,23 +43,32 @@ namespace WordDeck.Controllers
                 words = await _quiz.GetQuizWordsAsync(userId, level, count);
             }
 
+                       var wordList = words.ToList();
+
+            // Çeldirici havuzları: her seviye için bir kez çek (listeden sınavda seviyeler karışık olabilir)
+            var pools = new Dictionary<string, List<WordInfo>>();
+            foreach (var lvl in wordList.Select(w => w.Level).Distinct())
+                pools[lvl] = (await _placement.GetPoolAsync(lvl, 300)).ToList();
+
             var questions = new List<PracticeQuestionDto>();
-
-            foreach (var q in words)
+            foreach (var q in wordList)
             {
-                string? cloze = PracticeQuestionBuilder.MakeCloze(q.Example, q.Headword);
-                q.QuestionType = PracticeQuestionBuilder.PickRandomType(cloze != null);
+                // Şimdilik hepsi seviye testindeki gibi çoktan seçmeli.
+                // (Okuma/dinleme/yazma/konuşma bölümleri sonra eklenecek)
+                var info = new WordInfo(q.WordId, q.Headword, q.PartOfSpeech, q.TurkishMeaning, q.Definition, q.Example);
+                var built = ChoiceQuestionBuilder.Build(info, pools[q.Level]);
 
-                if (q.QuestionType == QuestionTypes.Cloze)
-                    q.ClozeSentence = cloze;
-
-                if (q.QuestionType == QuestionTypes.Choice)
+                if (built != null)
                 {
-                    var distractors = await _hard.GetDistractorsAsync(q.Level, q.PartOfSpeech, q.WordId, 3);
-                    q.Choices = distractors
-                        .Append(new ChoiceDto { WordId = q.WordId, Headword = q.Headword })
-                        .OrderBy(_ => Random.Shared.Next())
-                        .ToList();
+                    q.QuestionType = QuestionTypes.Choice;
+                    q.ChoiceType = built.Type;
+                    q.Prompt = built.Prompt;
+                    q.Options = built.Options;
+                }
+                else
+                {
+                    // Kaliteli şık kurulamadı: anlam göstermeyen dinleme sorusu (bozuk çeviri ekrana çıkmasın)
+                    q.QuestionType = QuestionTypes.Listening;
                 }
 
                 questions.Add(q);
@@ -109,5 +112,13 @@ namespace WordDeck.Controllers
         [HttpGet("history")]
         public async Task<IActionResult> GetHistory() =>
             Ok(await _quiz.GetHistoryAsync(GetUserId(), 5));
+
+        public QuizController(IQuizRepository quiz, IHardRepository hard, IWordListRepository lists, IPlacementRepository placement)
+        {
+            _quiz = quiz;
+            _hard = hard;
+            _lists = lists;
+            _placement = placement;
+        }
     }
 }
