@@ -17,6 +17,20 @@ const TYPE_TITLES = {
   'en-tr': 'Bu kelime ne demek?'
 }
 
+// Üstteki seviye şeridi: geçilenler, şu anki, sıradakiler
+function LevelSteps({ level }) {
+  const current = LEVELS.indexOf(level)
+  return (
+    <div className="placement-levels">
+      {LEVELS.map((l, i) => (
+        <span key={l} className={`placement-level ${i < current ? 'done' : ''} ${i === current ? 'active' : ''}`}>
+          {l}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 // onExit: ana sayfaya dön, onStartLevel(level): önerilen seviyeyle çalışmaya başla
 function PlacementTest({ onExit, onStartLevel }) {
   const [phase, setPhase] = useState('intro')   // intro | loading | question | result | error
@@ -89,20 +103,6 @@ function PlacementTest({ onExit, onStartLevel }) {
     return q.prompt
   }
 
-  // Üstteki seviye şeridi: geçilenler, şu anki, sıradakiler
-  function LevelSteps() {
-    const current = LEVELS.indexOf(level)
-    return (
-      <div className="placement-levels">
-        {LEVELS.map((l, i) => (
-          <span key={l} className={`placement-level ${i < current ? 'done' : ''} ${i === current ? 'active' : ''}`}>
-            {l}
-          </span>
-        ))}
-      </div>
-    )
-  }
-
   if (phase === 'intro') {
     return (
       <div className="placement panel">
@@ -155,7 +155,7 @@ function PlacementTest({ onExit, onStartLevel }) {
   const q = session.questions[index]
   return (
     <div className="placement panel">
-      <LevelSteps />
+      <LevelSteps level={level} />
       <p className="muted">Soru {index + 1} / {session.questions.length}</p>
       <h3>{TYPE_TITLES[q.type]}</h3>
       <p className={`placement-prompt ${q.type === 'en-tr' || q.type === 'tr-en' ? 'big' : ''}`}>
