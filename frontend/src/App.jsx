@@ -21,6 +21,7 @@ import Settings from './Settings'
 import { useToast } from './ToastContext'
 import Stats from './Stats'
 import PlacementTest from './PlacementTest'
+import Themes from './Themes'
 
 
 function App() {
@@ -128,12 +129,15 @@ function App() {
               level={quizConfig.level}
               listId={quizConfig.listId}
               listName={quizConfig.listName}
+              themeId={quizConfig.themeId}
+              themeName={quizConfig.themeName}
               count={quizConfig.count}
-              onExit={() => navigate(quizConfig.listId ? 'notebook' : 'quizSetup')}
+              onExit={() => navigate(quizConfig.listId ? 'notebook' : quizConfig.themeId ? 'themes' : 'quizSetup')}
             />
           )}
           {view === 'search' && <Search query={searchQuery} />}
           {view === 'notebook' && <Notebook onBack={goHome} onStartQuiz={startQuiz} />}
+          {view === 'themes' && <Themes onStartQuiz={startQuiz} />}
           {view === 'phonetics' && <PhoneticGuide onBack={goHome} />}
           {view === 'settings' && <Settings onBack={goHome} />}
           {view === 'placement' && <PlacementTest onExit={goHome} onStartLevel={startStudy} />}

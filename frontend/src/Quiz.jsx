@@ -37,7 +37,7 @@ function formatTime(seconds) {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-function Quiz({ level, listId, listName, count, onExit }) {
+function Quiz({ level, listId, listName, themeId, themeName, count, onExit }) {
   const { supported: micSupported } = useSpeechRecognition()
   const [questions, setQuestions] = useState(null)
   const [index, setIndex] = useState(0)
@@ -55,7 +55,11 @@ function Quiz({ level, listId, listName, count, onExit }) {
 
   // Soruları yükle; mikrofon yoksa "söyle" sorularını "yaz"a çevir
   useEffect(() => {
-    const source = listId ? `listId=${listId}` : `level=${level}`
+    const source = listId
+      ? `listId=${listId}`
+      : themeId
+        ? `themeId=${themeId}${level ? `&level=${level}` : ''}`
+        : `level=${level}`
     apiFetch(`/api/Quiz?${source}&count=${count}`)
       .then(r => (r.ok ? r.json() : []))
       .then(data => {
@@ -65,7 +69,7 @@ function Quiz({ level, listId, listName, count, onExit }) {
             : q))
         startTime.current = Date.now()   // süre sorular gelince başlasın
       })
-  }, [level, listId, count, micSupported])
+  }, [level, listId, themeId, count, micSupported])
 
   // Süre sayacı
   useEffect(() => {
@@ -105,7 +109,7 @@ function Quiz({ level, listId, listName, count, onExit }) {
     setFinished(true)
     const duration = Math.floor((Date.now() - startTime.current) / 1000)
     setElapsed(duration)
-    if (listId) return   // listeden sınavlar geçmişe kaydedilmiyor (geçmiş seviye bazlı)
+    if (listId || themeId) return   // liste ve tema sınavları geçmişe kaydedilmiyor (geçmiş seviye bazlı)
     await apiFetch('/api/Quiz/finish', {
       method: 'POST',
       body: JSON.stringify({
@@ -142,7 +146,7 @@ function Quiz({ level, listId, listName, count, onExit }) {
     return (
       <div className="panel session-end">
         <h2>Henüz sınav olamazsın</h2>
-        <p>{listId ? `"${listName}" listesinde` : `${level} seviyesinde`} henüz soru çıkacak kelime yok.</p>        
+        <p>{listId ? `"${listName}" listesinde` : themeId ? `"${themeName}" temasında` : `${level} seviyesinde`} henüz soru çıkacak kelime yok.</p>      
         <button className="btn btn-primary" onClick={onExit}>Ana sayfaya dön</button>
       </div>
     )

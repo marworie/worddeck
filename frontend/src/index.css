@@ -1596,3 +1596,61 @@ button {
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
+
+/* ============ Temalar ============ */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+.theme-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: transform 0.15s, border-color 0.15s;
+}
+.theme-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+.theme-icon { font-size: 2rem; }
+.theme-name { font-size: 1.05rem; color: var(--text); }
+.theme-progress {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+.theme-progress div { height: 100%; background: var(--primary); }
+
+.theme-levels { margin: 8px 0 14px; }
+.chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+.theme-words { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; }
+.theme-word {
+  display: grid;
+  grid-template-columns: 1.2fr 2fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.theme-word:hover { border-color: var(--primary); }
+.theme-word-meaning { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.theme-word-status { font-size: 0.8rem; font-weight: 600; }
+.theme-word-status.new { color: var(--muted); }
+.theme-word-status.studying { color: var(--primary); }
+.theme-word-status.learned { color: var(--success); }
+
+@media (max-width: 560px) {
+  .theme-word { grid-template-columns: 1fr auto; }
+  .theme-word-meaning, .theme-word-status { display: none; }
+}

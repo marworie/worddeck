@@ -10,6 +10,7 @@ const NAV = [
   { view: 'hard', icon: 'ti-flame', label: 'Zorlandıklarım', short: 'Zorlar', mobile: true },
   { view: 'quizSetup', icon: 'ti-checklist', label: 'Sınav', mobile: true },
   { view: 'search', icon: 'ti-search', label: 'Kelime ara' },
+  { view: 'themes', icon: 'ti-category', label: 'Temalar' },
   { view: 'notebook', icon: 'ti-notebook', label: 'Defterim', mobile: true },
   { view: 'stats', icon: 'ti-chart-bar', label: 'İstatistikler' },
   { view: 'phonetics', icon: 'ti-language', label: 'Fonetik rehberi' }
