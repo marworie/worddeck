@@ -1654,3 +1654,145 @@ button {
   .theme-word { grid-template-columns: 1fr auto; }
   .theme-word-meaning, .theme-word-status { display: none; }
 }
+
+/* ============ Yeni ana sayfa ============ */
+:root { --navy: #0f2a3d; --warm: #f5b942; }
+
+.home { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+/* Karşılama */
+.home-greet h2 { margin: 0; font-size: 1.7rem; }
+.home-greet p { margin: 4px 0 12px; color: var(--muted); }
+.home-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.home-pills span {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--hover);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.home-pills .warm { background: rgba(245, 185, 66, 0.18); color: #b7791f; }
+
+.home-main { display: grid; grid-template-columns: 1fr 1.15fr; gap: 20px; }
+
+/* Bugünkü çalışma: sayfanın tek koyu, en dikkat çeken kartı */
+.today-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+  border-radius: var(--radius);
+  background: linear-gradient(145deg, var(--navy), #0f766e);
+  color: #fff;
+}
+.today-panel .today-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.75; }
+.today-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 1.1rem; }
+.today-items b { font-size: 1.9rem; margin-right: 6px; }
+.today-level { margin-left: 6px; padding: 2px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.18); font-size: 0.8rem; }
+.today-start {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 26px;
+  border: none;
+  border-radius: 12px;
+  background: var(--warm);
+  color: var(--navy);
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.today-start:hover { transform: translateY(-2px); }
+.today-goal { height: 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.2); overflow: hidden; margin-top: auto; }
+.today-goal div { height: 100%; background: var(--warm); }
+.today-goal-text { font-size: 0.8rem; opacity: 0.75; }
+
+/* Günün kelimesi */
+.wotd { display: flex; flex-direction: column; gap: 6px; }
+.wotd-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); font-weight: 700; }
+.wotd-meta { font-size: 0.85rem; color: var(--muted); }
+.wotd-head { display: flex; align-items: center; gap: 10px; }
+.wotd-word { margin: 0; font-size: 2.4rem; line-height: 1.1; color: var(--text); }
+.wotd-phonetic { color: var(--muted); font-family: 'Charis SIL', 'Segoe UI', serif; }
+.wotd-meaning { margin: 4px 0; font-size: 1.15rem; font-weight: 600; color: var(--soft-text, var(--primary)); }
+.wotd-example {
+  margin: 6px 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--warm);
+  border-radius: 8px;
+  background: var(--hover);
+}
+.wotd-example p { margin: 0 0 4px; font-style: italic; }
+.wotd-example b { color: var(--primary); font-style: normal; }
+.wotd-example-speak { margin-left: 6px; border: none; background: none; cursor: pointer; font-size: 0.9rem; }
+.wotd-btn { align-self: flex-start; margin-top: 6px; }
+
+/* Öğrenme yolculuğu */
+.journey-head { display: flex; justify-content: space-between; align-items: center; }
+.journey-path {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin: 12px 0;
+  position: relative;
+}
+.journey-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+.journey-step:hover:not(.locked) { background: var(--hover); }
+.journey-dot {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 700;
+  border: 2px solid var(--border);
+  background: var(--card);
+}
+.journey-step.done .journey-dot { background: var(--primary); border-color: var(--primary); color: #fff; }
+.journey-step.current .journey-dot { border-color: var(--warm); box-shadow: 0 0 0 4px rgba(245, 185, 66, 0.25); }
+.journey-step.locked { opacity: 0.45; cursor: default; }
+.journey-here { font-size: 0.7rem; font-weight: 700; color: #b7791f; }
+.journey-bar { position: relative; width: 100%; height: 5px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.journey-bar div { position: absolute; left: 0; top: 0; height: 100%; }
+.journey-bar .studied { background: var(--accent-light, rgba(20, 184, 166, 0.35)); }
+.journey-bar .learned { background: var(--primary); }
+.journey-summary { margin: 0; color: var(--muted); }
+
+/* Kısayollar: ikinci planda, küçük */
+.home-shortcuts { display: flex; flex-wrap: wrap; gap: 10px; }
+.home-shortcuts button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+}
+.home-shortcuts button:hover { border-color: var(--primary); }
+
+/* Daha ince üst çubuk */
+.topbar { padding: 8px 28px; }
+.topbar-search input { padding: 8px 0; }
+
+@media (max-width: 768px) {
+  .home-main { grid-template-columns: 1fr; }
+  .journey-path { grid-template-columns: repeat(3, 1fr); }
+  .wotd-word { font-size: 2rem; }
+}

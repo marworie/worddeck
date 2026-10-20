@@ -79,6 +79,7 @@ builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 builder.Services.AddHostedService<DictionaryBackfillService>();
 builder.Services.AddScoped<IPlacementRepository, PlacementRepository>();
 builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
+builder.Services.AddScoped<IHomeRepository, HomeRepository>();
 
 var app = builder.Build();
 
