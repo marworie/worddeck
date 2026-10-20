@@ -17,12 +17,24 @@ namespace WordDeck.Controllers
         private readonly IHardRepository _hard;   // karıştırma kaydı için
         private readonly IWordListRepository _lists;
         private readonly IPlacementRepository _placement;   // çeldirici havuzu
+        private readonly IThemeRepository _themes;
+
+        public QuizController(IQuizRepository quiz, IHardRepository hard, IWordListRepository lists,
+                              IPlacementRepository placement, IThemeRepository themes)
+        {
+            _quiz = quiz;
+            _hard = hard;
+            _lists = lists;
+            _placement = placement;
+            _themes = themes;
+        }
 
         private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
-        // GET api/Quiz?level=B1&count=10   ya da   GET api/Quiz?listId=3&count=10
+        // GET api/Quiz?level=B1   |   ?listId=3   |   ?themeId=2 (&level=B1 isteğe bağlı)   &count=10
         [HttpGet]
-        public async Task<IActionResult> GetQuestions([FromQuery] string? level, [FromQuery] int? listId, [FromQuery] int count = 10)
+        public async Task<IActionResult> GetQuestions([FromQuery] string? level, [FromQuery] int? listId,
+                                                      [FromQuery] int? themeId, [FromQuery] int count = 10)
         {
             int userId = GetUserId();
             count = Math.Clamp(count, 5, 50);
@@ -34,6 +46,13 @@ namespace WordDeck.Controllers
                 if (await _lists.GetListAsync(userId, listId.Value) == null)
                     return NotFound(new { message = "Liste bulunamadı." });
                 words = await _quiz.GetListQuizWordsAsync(userId, listId.Value, count);
+            }
+            else if (themeId.HasValue)
+            {
+                if (!await _themes.ExistsAsync(themeId.Value))
+                    return NotFound(new { message = "Tema bulunamadı." });
+                string? themeLevel = string.IsNullOrWhiteSpace(level) ? null : level.ToUpperInvariant();
+                words = await _themes.GetQuizWordsAsync(userId, themeId.Value, themeLevel, count);
             }
             else
             {
@@ -50,7 +69,7 @@ namespace WordDeck.Controllers
             foreach (var lvl in wordList.Select(w => w.Level).Distinct())
                 pools[lvl] = (await _placement.GetPoolAsync(lvl, 300)).ToList();
 
-                        var sections = QuizSectionBuilder.AssignSections(wordList.Count);
+            var sections = QuizSectionBuilder.AssignSections(wordList.Count);
             var questions = new List<PracticeQuestionDto>();
 
             for (int i = 0; i < wordList.Count; i++)
@@ -111,13 +130,5 @@ namespace WordDeck.Controllers
         [HttpGet("history")]
         public async Task<IActionResult> GetHistory() =>
             Ok(await _quiz.GetHistoryAsync(GetUserId(), 5));
-
-        public QuizController(IQuizRepository quiz, IHardRepository hard, IWordListRepository lists, IPlacementRepository placement)
-        {
-            _quiz = quiz;
-            _hard = hard;
-            _lists = lists;
-            _placement = placement;
-        }
     }
 }

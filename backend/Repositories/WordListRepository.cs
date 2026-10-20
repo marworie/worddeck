@@ -25,7 +25,7 @@ namespace WordDeck.Repositories
 
         // Arama ve liste ekranlarında ortak sütunlar: kelime + kullanıcının o kelimeyle durumu.
         // Favori mi: kullanıcının favoriler listesinde var mı diye alt sorguyla bakıyoruz
-        private const string SummaryColumns = @"
+        public const string SummaryColumns = @"
             w.Id AS WordId, w.Headword, w.PartOfSpeech, w.Level,
             COALESCE(uw.CustomMeaning, w.TurkishMeaning) AS TurkishMeaning,
             CAST(uw.Box AS INT) AS Box,
