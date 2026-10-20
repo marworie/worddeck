@@ -70,7 +70,8 @@ function ChoicePrompt({ question }) {
 }
 
 // Yazarak cevaplanan sorularda ortak giriş kutusu (+ isteğe bağlı harf ipucu)
-function AnswerInput({ answer, answered, onAnswer, allowHint = true }) {
+// alternatives: bunlar da doğru sayılır (ör. boşlukta "encouraged" beklenirken "encourage")
+function AnswerInput({ answer, alternatives = [], answered, onAnswer, allowHint = true }) {
   const [value, setValue] = useState('')
   const [hintCount, setHintCount] = useState(0)   // kaç harf gösterildi
 
@@ -80,7 +81,10 @@ function AnswerInput({ answer, answered, onAnswer, allowHint = true }) {
   function submit(e) {
     e.preventDefault()
     if (answered || !value.trim()) return
-    const result = checkTyped(value, answer)
+    // Herhangi bir kabul edilen cevapla eşleşiyorsa doğru; değilse asıl cevaba göre sonuç
+    const result = [answer, ...alternatives]
+      .map(a => checkTyped(value, a))
+      .find(r => r.correct) ?? checkTyped(value, answer)
     onAnswer(result.correct, { typo: result.typo })
   }
 
@@ -152,12 +156,21 @@ export function ClozeQuestion({ question, answered, onAnswer }) {
   // Sınavda sadece temiz ipucu (hint), Zorlandıklarım'da Türkçe anlam
   const hint = question.section ? question.hint : question.turkishMeaning
 
+  // Boşluğun öncesi örnek cümleyle aynı; oradan sonraki kelime cümledeki asıl hal ("encouraged")
+  const before = question.clozeSentence.split('_____')[0]
+  const form = question.example?.slice(before.length).match(/^[\w'-]+/)?.[0]
+
   return (
     <>
       <p className="q-instruction">Boşluğa gelen kelimeyi yaz</p>
       <p className="q-cloze">{question.clozeSentence}</p>
       {hint && <p className="q-small-hint">İpucu: {hint}</p>}
-      <AnswerInput answer={question.headword} answered={answered} onAnswer={onAnswer} />
+      <AnswerInput
+        answer={form || question.headword}
+        alternatives={[question.headword]}
+        answered={answered}
+        onAnswer={onAnswer}
+      />
     </>
   )
 }
