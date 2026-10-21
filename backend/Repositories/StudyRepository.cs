@@ -12,6 +12,8 @@ namespace WordDeck.Repositories
         Task<IEnumerable<LevelProgressDto>> GetProgressAsync(int userId, DateTime today);
         Task<IEnumerable<DateTime>> GetStudyDatesAsync(int userId);
         Task<int> GetTodayReviewedAsync(int userId, DateTime today);
+        Task<UserWordSnapshot?> GetSnapshotAsync(int userId, int wordId);
+        Task RestoreAsync(int userId, int wordId, UserWordSnapshot? previous, DateTime today);
     }
 
     public class StudyRepository : BaseRepository, IStudyRepository
@@ -108,5 +110,39 @@ namespace WordDeck.Repositories
             await ExecuteScalarAsync<int?>(
                 "SELECT CardsReviewed FROM StudyDays WHERE UserId = @UserId AND StudyDate = @Today",
                 new { UserId = userId, Today = today }) ?? 0;   // bugün hiç çalışılmadıysa satır yok → 0
+
+                // Kartın şu anki hali (hiç çalışılmadıysa null)
+        public Task<UserWordSnapshot?> GetSnapshotAsync(int userId, int wordId) =>
+            QuerySingleOrDefaultAsync<UserWordSnapshot>(
+                @"SELECT CAST(Box AS INT) AS Box, NextReviewDate, LastReviewedAt, CorrectCount, WrongCount,
+                         CAST(HardState AS INT) AS HardState, CAST(HardStreak AS INT) AS HardStreak,
+                         HardStateSince, HardNextCheck
+                  FROM UserWords WHERE UserId = @UserId AND WordId = @WordId",
+                new { UserId = userId, WordId = wordId });
+
+        // Son cevabı geri al: kart daha önce yoksa sil, varsa eski haline döndür; bugünün sayacından düş
+        public Task RestoreAsync(int userId, int wordId, UserWordSnapshot? previous, DateTime today) =>
+            ExecuteAsync(
+                @"IF @Existed = 0
+                      DELETE FROM UserWords WHERE UserId = @UserId AND WordId = @WordId;
+                  ELSE
+                      UPDATE UserWords
+                      SET Box = @Box, NextReviewDate = @NextReviewDate, LastReviewedAt = @LastReviewedAt,
+                          CorrectCount = @CorrectCount, WrongCount = @WrongCount,
+                          HardState = @HardState, HardStreak = @HardStreak,
+                          HardStateSince = @HardStateSince, HardNextCheck = @HardNextCheck
+                      WHERE UserId = @UserId AND WordId = @WordId;
+
+                  UPDATE StudyDays SET CardsReviewed = CardsReviewed - 1
+                  WHERE UserId = @UserId AND StudyDate = @Today AND CardsReviewed > 0;",
+                new
+                {
+                    UserId = userId, WordId = wordId, Today = today,
+                    Existed = previous != null,
+                    Box = previous?.Box, NextReviewDate = previous?.NextReviewDate, LastReviewedAt = previous?.LastReviewedAt,
+                    CorrectCount = previous?.CorrectCount, WrongCount = previous?.WrongCount,
+                    HardState = previous?.HardState, HardStreak = previous?.HardStreak,
+                    HardStateSince = previous?.HardStateSince, HardNextCheck = previous?.HardNextCheck
+                });
     }
 }

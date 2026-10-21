@@ -1,7 +1,10 @@
+// ============================================================
 // StudySession.jsx
-// Bir seviyenin çalışma oturumu: kartlar sırayla gelir,
-// kullanıcı çevirip "Biliyorum / Bilmiyorum" der, cevap backend'e kaydedilir.
-// Klavye: Boşluk = çevir, ← = bilmiyorum, → = biliyorum
+// Bir seviyenin çalışma oturumu: kartlar sırayla gelir, kullanıcı çevirip
+// 4 seçenekten biriyle değerlendirir, cevap backend'e kaydedilir.
+// Son cevap geri alınabilir (yanlışlıkla basılırsa).
+// Klavye: Boşluk = çevir, 1–4 = değerlendir, ← bilmiyorum, → biliyorum, Backspace / Ctrl+Z = geri al
+// ============================================================
 
 import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
@@ -35,6 +38,7 @@ function StudySession({ level, onExit }) {
   const [flipped, setFlipped] = useState(false)
   const [isAnswering, setIsAnswering] = useState(false)
   const [stats, setStats] = useState({ known: 0, unknown: 0 })
+  const [lastRating, setLastRating] = useState(null)   // son verilen cevap: geri alınabilsin diye (null = yok)
 
   // Oturumu yükle (yeniden başlatmak için de kullanılıyor)
   function loadSession() {
@@ -42,6 +46,7 @@ function StudySession({ level, onExit }) {
     setIndex(0)
     setFlipped(false)
     setStats({ known: 0, unknown: 0 })
+    setLastRating(null)
 
     apiFetch(`/api/Study/session?level=${level}`)
       .then(res => res.ok ? res.json() : [])
@@ -84,8 +89,27 @@ function StudySession({ level, onExit }) {
       setStats(prev => known
         ? { ...prev, known: prev.known + 1 }
         : { ...prev, unknown: prev.unknown + 1 })
+      setLastRating(rating)
       setFlipped(false)
       setIndex(prev => prev + 1)
+    }
+    setIsAnswering(false)
+  }
+
+  // ↶ Son cevabı geri al: sunucuda kart eski haline döner, ekranda önceki kart arka yüzüyle gelir
+  async function undo() {
+    if (lastRating === null || isAnswering) return
+    setIsAnswering(true)
+
+    const response = await apiFetch('/api/Study/undo', { method: 'POST' })
+    if (response.ok) {
+      const wasKnown = lastRating > 0
+      setStats(prev => wasKnown
+        ? { ...prev, known: prev.known - 1 }
+        : { ...prev, unknown: prev.unknown - 1 })
+      setIndex(prev => prev - 1)
+      setFlipped(true)
+      setLastRating(null)   // sadece son cevap geri alınabilir
     }
     setIsAnswering(false)
   }
@@ -95,9 +119,17 @@ function StudySession({ level, onExit }) {
     function onKeyDown(e) {
       // Bir kutuya yazı yazılıyorsa (anlam düzeltme) kısayolları devre dışı bırak
       if (e.target.tagName === 'INPUT') return
+
+      // Backspace ya da Ctrl+Z: son cevabı geri al (oturum bitmiş olsa da çalışsın)
+      if (e.key === 'Backspace' || ((e.ctrlKey || e.metaKey) && e.key === 'z')) {
+        e.preventDefault()
+        undo()
+        return
+      }
+
       if (!card) return
       if (e.code === 'Space') {
-        e.preventDefault()  
+        e.preventDefault()
         setFlipped(f => !f)
       }
       // 1-4 tuşları değerlendirme; ← bilmiyorum, → biliyorum kısayolları da kalsın
@@ -110,10 +142,10 @@ function StudySession({ level, onExit }) {
     return () => window.removeEventListener('keydown', onKeyDown)
   })   // bağımlılık dizisi yok: her render'da güncel card/flipped ile yeniden bağlansın
 
-  // Yükleniyor 
+  // Yükleniyor
   if (!cards) return <p className="loading-text">Kartlar hazırlanıyor...</p>
 
-  // Bu seviyede bugün kart yok 
+  // Bu seviyede bugün kart yok
   if (cards.length === 0) {
     return (
       <div className="panel session-end">
@@ -134,6 +166,9 @@ function StudySession({ level, onExit }) {
         <p className="session-score">{stats.known} / {total} biliyordun (%{percent})</p>
         <p className="session-note">Bilemediklerin yarın tekrar karşına çıkacak.</p>
         <div className="session-end-buttons">
+          {lastRating !== null && (
+            <button className="btn btn-ghost" onClick={undo}>↶ Son cevabı geri al</button>
+          )}
           <button className="btn btn-secondary" onClick={onExit}>Ana sayfa</button>
           <button className="btn btn-primary" onClick={loadSession}>Biraz daha çalış</button>
         </div>
@@ -146,6 +181,11 @@ function StudySession({ level, onExit }) {
     <div className="session">
       <div className="session-top">
         <button className="btn btn-ghost" onClick={onExit}>← Çık</button>
+        {lastRating !== null && (
+          <button className="btn btn-ghost undo-btn" onClick={undo} disabled={isAnswering} title="Son cevabı geri al (Backspace)">
+            ↶ Geri al
+          </button>
+        )}
         <span className="session-counter">{index + 1} / {cards.length}</span>
       </div>
 
@@ -172,7 +212,7 @@ function StudySession({ level, onExit }) {
         ))}
       </div>
 
-      <p className="keyboard-hint">⌨️ Boşluk: çevir · 1–4: değerlendir</p>
+      <p className="keyboard-hint">⌨️ Boşluk: çevir · 1–4: değerlendir · Backspace: geri al</p>
     </div>
   )
 }

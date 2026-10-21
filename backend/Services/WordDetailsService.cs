@@ -282,7 +282,7 @@ namespace WordDeck.Services
             var matching = senses.Where(s => s.Pos.Equals(partOfSpeech, StringComparison.OrdinalIgnoreCase)).ToList();
             var pool = matching.Count > 0 ? matching : senses;
 
-                        // Wiktionary'de en yaygın anlamlar en üstte. Sadece ilk 3 anlam içinde örneği olanı tercih et,
+            // Wiktionary'de en yaygın anlamlar en üstte. Sadece ilk 3 anlam içinde örneği olanı tercih et,
             // yoksa çok aşağıdaki nadir bir anlamı seçmek yerine en üstteki anlamı al
             var withExample = pool.Take(3).FirstOrDefault(s => !string.IsNullOrWhiteSpace(s.Example));
             return withExample.Definition != null

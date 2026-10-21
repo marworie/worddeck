@@ -51,4 +51,18 @@ namespace WordDeck.Dtos
         public List<ForgottenWordDto> MostForgotten { get; set; } = new();
         public List<QuizResultDto> Quizzes { get; set; } = new();
     }
+
+    // Kartın cevaptan önceki hali (geri alma için)
+    public class UserWordSnapshot
+    {
+        public int Box { get; set; }
+        public DateTime NextReviewDate { get; set; }
+        public DateTime? LastReviewedAt { get; set; }
+        public int CorrectCount { get; set; }
+        public int WrongCount { get; set; }
+        public int HardState { get; set; }
+        public int HardStreak { get; set; }
+        public DateTime? HardStateSince { get; set; }
+        public DateTime? HardNextCheck { get; set; }
+    }
 }

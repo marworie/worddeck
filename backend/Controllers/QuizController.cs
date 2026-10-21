@@ -117,8 +117,8 @@ namespace WordDeck.Controllers
             int userId = GetUserId();
 
             bool correct = dto.QuestionType == QuestionTypes.Choice && dto.ChosenWordId.HasValue
-                ? dto.ChosenWordId == dto.WordId
-                : dto.IsCorrect;
+                ? dto.ChosenWordId == dto.WordId   // çoktan seçmeli: sunucu kendisi kontrol ediyor 
+                : dto.IsCorrect;                   // yazma, dinleme, konuşma: tarayıcının dediğine güveniyor 
 
             await _quiz.LogAnswerAsync(userId, dto.WordId, dto.QuestionType, correct);
 
