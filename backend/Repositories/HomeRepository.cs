@@ -13,18 +13,19 @@ namespace WordDeck.Repositories
     {
         public HomeRepository(IConfiguration configuration) : base(configuration) { }
 
-        // Her seviyede toplam / çalışılan / öğrenilen kelime sayısı
+        // Her seviyede toplam / çalışılan / bilinen / kalıcı öğrenilen kelime sayısı
         public Task<IEnumerable<JourneyLevelDto>> GetJourneyAsync(int userId) =>
             QueryAsync<JourneyLevelDto>(
                 @"SELECT w.Level,
                          COUNT(*) AS Total,
                          COUNT(uw.WordId) AS Studied,
+                         ISNULL(SUM(CASE WHEN uw.Box >= @KnownBox THEN 1 ELSE 0 END), 0) AS Known,
                          ISNULL(SUM(CASE WHEN uw.Box >= @LearnedBox THEN 1 ELSE 0 END), 0) AS Learned
                   FROM Words w
                   LEFT JOIN UserWords uw ON uw.WordId = w.Id AND uw.UserId = @UserId
                   GROUP BY w.Level
                   ORDER BY w.Level",
-                new { UserId = userId, LearnedBox = LeitnerService.LearnedBox });
+                new { UserId = userId, KnownBox = LeitnerService.KnownBox, LearnedBox = LeitnerService.LearnedBox });
 
         // Günün kelimesi: kullanıcının seviyesinden, örnek cümlesi ve temiz anlamı olan bir kelime.
         // Sıralama gün + kullanıcıya göre sabit: gün boyu aynı kelime gelir, ertesi gün değişir.

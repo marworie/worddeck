@@ -51,8 +51,9 @@ namespace WordDeck.Controllers
                 currentLevel,
                 journey,
                 wordOfDay,
+                knownTotal = journey.Sum(j => j.Known),
                 learnedTotal = journey.Sum(j => j.Learned),
-                studyingTotal = journey.Sum(j => j.Studied - j.Learned),
+                studyingTotal = journey.Sum(j => j.Studied - j.Known),
                 daysThisWeek = dates.Count(d => d >= today.AddDays(-6) && d <= today),
                 dailyNewWords = user?.DailyNewWords ?? 10
             });

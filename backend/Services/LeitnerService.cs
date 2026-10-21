@@ -16,6 +16,10 @@ namespace WordDeck.Services
     {
         public const int FirstBox = 1;
         public const int LearnedBox = 6;   // 6 = öğrenildi
+        // Bu kutuya çıkan kelimeye en az bir kez "Biliyorum" ya da "Çok kolay" denmiştir
+        // (Bilmiyorum kartı 1. kutuya geri atar, Zor aynı kutuda bırakır)
+        public const int KnownBox = 2;
+
 
         // Kutu → kaç gün sonra tekrar (index = kutu numarası, 0 kullanılmıyor)
         private static readonly int[] IntervalDays = { 0, 1, 2, 4, 8, 16, 60 };

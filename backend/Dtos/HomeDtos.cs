@@ -7,6 +7,7 @@ namespace WordDeck.Dtos
         public int Total { get; set; }     // seviyedeki kelime sayısı
         public int Studied { get; set; }   // çalışmaya eklenmiş
         public int Learned { get; set; }   // öğrenilmiş
+        public int Known { get; set; }     // bilinen (2. kutu ve üstü)
     }
 
     // Günün kelimesi

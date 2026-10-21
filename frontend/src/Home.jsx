@@ -123,10 +123,9 @@ function Home({ onStartStudy, onNavigate }) {
           <h3 className="section-title">Öğrenme yolculuğun</h3>
           <button className="btn btn-ghost small" onClick={() => onNavigate('placement')}>Seviye testi</button>
         </div>
-
         <div className="journey-path">
           {home.journey.map((j, i) => {
-            const learnedPct = j.total ? (j.learned / j.total) * 100 : 0
+            const knownPct = j.total ? (j.known / j.total) * 100 : 0
             const studiedPct = j.total ? (j.studied / j.total) * 100 : 0
             const state = i < currentIndex ? 'done' : i === currentIndex ? 'current' : 'next'
             return (
@@ -135,9 +134,11 @@ function Home({ onStartStudy, onNavigate }) {
                 {state === 'current' && <span className="journey-here">Buradasın</span>}
                 <div className="journey-bar">
                   <div className="studied" style={{ width: `${studiedPct}%` }} />
-                  <div className="learned" style={{ width: `${learnedPct}%` }} />
+                  <div className="learned" style={{ width: `${knownPct}%` }} />
                 </div>
-                <span className="muted small">{j.learned} / {j.total}</span>
+                <span className="muted small">
+                  {state === 'done' ? '✓ Geçildi' : `${j.known} / ${j.total}`}
+                </span>
               </button>
             )
           })}
@@ -148,8 +149,9 @@ function Home({ onStartStudy, onNavigate }) {
         </div>
 
         <p className="journey-summary">
-          Toplam <b>{home.learnedTotal}</b> kelime öğrendin · <b>{home.studyingTotal}</b> kelime öğreniliyor
+          <b>{home.knownTotal}</b> kelimeyi biliyorsun · <b>{home.learnedTotal}</b> kalıcı öğrenildi · <b>{home.studyingTotal}</b> öğreniliyor
         </p>
+        
       </section>
 
       {/* 5. Küçük kısayollar */}
