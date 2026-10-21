@@ -77,6 +77,7 @@ builder.Services.AddScoped<WordNetworkService>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 builder.Services.AddHostedService<DictionaryBackfillService>();
+builder.Services.AddHostedService<MeaningBackfillService>();
 builder.Services.AddScoped<IPlacementRepository, PlacementRepository>();
 builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
 builder.Services.AddScoped<IHomeRepository, HomeRepository>();

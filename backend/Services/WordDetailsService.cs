@@ -66,6 +66,11 @@ namespace WordDeck.Services
             return (ok, dict.Definition, dict.Example);
         }
 
+        // Sadece Türkçe anlam: arka plan doldurma için. Ok = false ise hata ya da kota doldu
+        public Task<(bool Ok, string? Meaning)> FetchMeaningOnlyAsync(string headword, string partOfSpeech) =>
+            TryAsync(() => FetchTurkishAsync(headword, partOfSpeech), "MyMemory", headword);
+
+
         // Örnek cümlenin Türkçesi (hata olursa null)
         public async Task<string?> TranslateExampleAsync(string example)
         {

@@ -14,6 +14,8 @@ namespace WordDeck.Repositories
         Task<IEnumerable<FamilyMemberDto>> GetByHeadwordsAsync(IEnumerable<string> headwords);
         Task<Word?> GetNextForBackfillAsync();
         Task SaveDictionaryAsync(int id, string? definition, string? example);
+        Task<Word?> GetNextForMeaningAsync();
+        Task SaveMeaningAsync(int id, string? meaning);
     }
 
     public class WordRepository : BaseRepository, IWordRepository
@@ -113,5 +115,22 @@ namespace WordDeck.Repositories
                       DictionaryFetchedAt = SYSDATETIME()
                   WHERE Id = @Id",
                 new { Id = id, Definition = definition, Example = example });
+        
+        // Anlamı boş sıradaki kelime: önce temalardaki kelimeler, sonra seviye sırasıyla (A1 → C1)
+        public Task<Word?> GetNextForMeaningAsync() =>
+            QuerySingleOrDefaultAsync<Word>(
+                @"SELECT TOP 1 w.* FROM Words w
+                  WHERE w.TurkishMeaning IS NULL AND w.MeaningFetchedAt IS NULL
+                  ORDER BY CASE WHEN EXISTS (SELECT 1 FROM ThemeWords tw WHERE tw.WordId = w.Id) THEN 0 ELSE 1 END,
+                           w.Level, w.Id");
+
+        // Anlamı kaydet ve "denendi" diye işaretle
+        public Task SaveMeaningAsync(int id, string? meaning) =>
+            ExecuteAsync(
+                @"UPDATE Words
+                  SET TurkishMeaning = COALESCE(@Meaning, TurkishMeaning), MeaningFetchedAt = SYSDATETIME()
+                  WHERE Id = @Id",
+                new { Id = id, Meaning = meaning });
     }
+
 }
