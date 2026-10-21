@@ -58,5 +58,20 @@ namespace WordDeck.Controllers
                 dailyNewWords = user?.DailyNewWords ?? 10
             });
         }
+
+        // GET api/Home/discover → kullanıcının seviyesinden henüz çalışmadığı rastgele kelimeler
+        [HttpGet("discover")]
+        public async Task<IActionResult> Discover([FromQuery] int count = 10)
+        {
+            int userId = GetUserId();
+            var placement = await _placement.GetResultAsync(userId);
+            string level = placement?.PlacementLevel ?? "A1";
+
+            var words = (await _home.GetDiscoverWordsAsync(userId, level, Math.Clamp(count, 1, 30))).ToList();
+            foreach (var w in words)   // listede sadece kısa, temiz anlam
+                w.TurkishMeaning = ChoiceQuestionBuilder.ShortMeaning(w.TurkishMeaning) ?? w.TurkishMeaning;
+
+            return Ok(new { level, words });
+        }
     }
 }

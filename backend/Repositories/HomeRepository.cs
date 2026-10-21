@@ -7,6 +7,7 @@ namespace WordDeck.Repositories
     {
         Task<IEnumerable<JourneyLevelDto>> GetJourneyAsync(int userId);
         Task<WordOfDayDto?> GetWordOfDayAsync(int userId, string level, DateTime today);
+        Task<IEnumerable<WordSummaryDto>> GetDiscoverWordsAsync(int userId, string level, int count);
     }
 
     public class HomeRepository : BaseRepository, IHomeRepository
@@ -55,5 +56,16 @@ namespace WordDeck.Repositories
             if (word != null) word.TurkishMeaning = ChoiceQuestionBuilder.ShortMeaning(word.TurkishMeaning);
             return word;
         }
+
+        // Keşfet: seviyeden, anlamı olan ve henüz çalışılmayan rastgele kelimeler
+        public Task<IEnumerable<WordSummaryDto>> GetDiscoverWordsAsync(int userId, string level, int count) =>
+            QueryAsync<WordSummaryDto>(
+                $@"SELECT TOP (@Count) {WordListRepository.SummaryColumns}
+                   FROM Words w
+                   LEFT JOIN UserWords uw ON uw.WordId = w.Id AND uw.UserId = @UserId
+                   WHERE w.Level = @Level AND w.TurkishMeaning IS NOT NULL AND uw.WordId IS NULL
+                     AND w.PartOfSpeech IN @Pos
+                   ORDER BY NEWID()",
+                new { UserId = userId, Level = level, Count = count, Pos = ChoiceQuestionBuilder.ContentPos });
     }
 }

@@ -37,7 +37,7 @@ function formatTime(seconds) {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-function Quiz({ level, listId, listName, themeId, themeName, count, onExit }) {
+function Quiz({ level, listId, listName, themeId, themeName, section, count, onExit }) {  
   const { supported: micSupported } = useSpeechRecognition()
   const [questions, setQuestions] = useState(null)
   const [index, setIndex] = useState(0)
@@ -60,7 +60,7 @@ function Quiz({ level, listId, listName, themeId, themeName, count, onExit }) {
       : themeId
         ? `themeId=${themeId}${level ? `&level=${level}` : ''}`
         : `level=${level}`
-    apiFetch(`/api/Quiz?${source}&count=${count}`)
+      apiFetch(`/api/Quiz?${source}&count=${count}${section ? `&section=${section}` : ''}`)
       .then(r => (r.ok ? r.json() : []))
       .then(data => {
           setQuestions(data.map(q =>
@@ -69,7 +69,7 @@ function Quiz({ level, listId, listName, themeId, themeName, count, onExit }) {
             : q))
         startTime.current = Date.now()   // süre sorular gelince başlasın
       })
-  }, [level, listId, themeId, count, micSupported])
+    }, [level, listId, themeId, section, count, micSupported])
 
   // Süre sayacı
   useEffect(() => {

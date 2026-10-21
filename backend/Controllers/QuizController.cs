@@ -29,15 +29,22 @@ namespace WordDeck.Controllers
             _themes = themes;
         }
 
+
         private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
         // GET api/Quiz?level=B1   |   ?listId=3   |   ?themeId=2 (&level=B1 isteğe bağlı)   &count=10
         [HttpGet]
-        public async Task<IActionResult> GetQuestions([FromQuery] string? level, [FromQuery] int? listId,
-                                                      [FromQuery] int? themeId, [FromQuery] int count = 10)
+         public async Task<IActionResult> GetQuestions([FromQuery] string? level, [FromQuery] int? listId,
+            [FromQuery] int? themeId, [FromQuery] string? section, [FromQuery] int count = 10)
         {
             int userId = GetUserId();
             count = Math.Clamp(count, 5, 50);
+            // Tek bölüm seçildiyse (ör. sadece dinleme): her kelimeyle o bölümün sorusu kurulamayabilir,
+            // o yüzden iki kat kelime çekip istenen sayıya ulaşınca dur
+            section = string.IsNullOrWhiteSpace(section) ? null : section.ToLowerInvariant();
+            if (section != null && !QuizSections.All.Contains(section))
+                return BadRequest(new { message = "Geçersiz bölüm." });
+            int fetchCount = section != null ? count * 2 : count;
 
             IEnumerable<PracticeQuestionDto> words;
             if (listId.HasValue)
@@ -45,21 +52,21 @@ namespace WordDeck.Controllers
                 // Başkasının listesinden sınav olunamasın
                 if (await _lists.GetListAsync(userId, listId.Value) == null)
                     return NotFound(new { message = "Liste bulunamadı." });
-                words = await _quiz.GetListQuizWordsAsync(userId, listId.Value, count);
+                words = await _quiz.GetListQuizWordsAsync(userId, listId.Value, fetchCount);
             }
             else if (themeId.HasValue)
             {
                 if (!await _themes.ExistsAsync(themeId.Value))
                     return NotFound(new { message = "Tema bulunamadı." });
                 string? themeLevel = string.IsNullOrWhiteSpace(level) ? null : level.ToUpperInvariant();
-                words = await _themes.GetQuizWordsAsync(userId, themeId.Value, themeLevel, count);
+                words = await _themes.GetQuizWordsAsync(userId, themeId.Value, themeLevel, fetchCount);
             }
             else
             {
                 level = (level ?? "").ToUpperInvariant();
                 if (!Levels.All.Contains(level))
                     return BadRequest(new { message = "Geçersiz seviye." });
-                words = await _quiz.GetQuizWordsAsync(userId, level, count);
+                words = await _quiz.GetQuizWordsAsync(userId, level, fetchCount);
             }
 
             var wordList = words.ToList();
@@ -69,14 +76,20 @@ namespace WordDeck.Controllers
             foreach (var lvl in wordList.Select(w => w.Level).Distinct())
                 pools[lvl] = (await _placement.GetPoolAsync(lvl, 300)).ToList();
 
-            var sections = QuizSectionBuilder.AssignSections(wordList.Count);
+                        var sections = section != null
+                ? Enumerable.Repeat(section, wordList.Count).ToList()
+                : QuizSectionBuilder.AssignSections(wordList.Count);
             var questions = new List<PracticeQuestionDto>();
 
-            for (int i = 0; i < wordList.Count; i++)
+            for (int i = 0; i < wordList.Count && questions.Count < count; i++)
             {
                 var q = wordList[i];
                 var info = new WordInfo(q.WordId, q.Headword, q.PartOfSpeech, q.TurkishMeaning, q.Definition, q.Example);
-                var built = QuizSectionBuilder.BuildWithFallback(sections[i], info, pools[q.Level]);
+
+                // Tek bölümde başka bölüme kaymasın; karışık sınavda kurulamazsa diğer bölümleri dener
+                var built = section != null
+                    ? QuizSectionBuilder.Build(section, info, pools[q.Level], Random.Shared)
+                    : QuizSectionBuilder.BuildWithFallback(sections[i], info, pools[q.Level]);
                 if (built == null) continue;   // bu kelimeyle düzgün soru kurulamadı: atla
 
                 q.Section = built.Section;
@@ -87,8 +100,8 @@ namespace WordDeck.Controllers
                 q.Audio = built.Audio;
                 q.Hint = built.Hint;
                 if (built.QuestionType == QuestionTypes.Cloze) q.ClozeSentence = built.Prompt;
-                
                 q.CleanMeaning = ChoiceQuestionBuilder.ShortMeaning(q.TurkishMeaning);
+
                 questions.Add(q);
             }
 

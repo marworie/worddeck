@@ -1796,3 +1796,38 @@ button {
   .journey-path { grid-template-columns: repeat(3, 1fr); }
   .wotd-word { font-size: 2rem; }
 }
+
+/* Sınav sayfası */
+.quiz-setup { display: flex; flex-direction: column; gap: 20px; }
+.quiz-info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 12px; }
+.quiz-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--hover);
+}
+.quiz-info-icon { font-size: 1.6rem; }
+
+/* Kelime ara: boş durum */
+.search-empty { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
+.search-themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; margin-top: 8px; }
+.search-theme {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.search-theme:hover { border-color: var(--primary); }
+
+@media (max-width: 768px) {
+  .quiz-info-grid { grid-template-columns: repeat(2, 1fr); }
+}

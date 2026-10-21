@@ -12,7 +12,7 @@ import Levels from './Levels'
 import StudySession from './StudySession'
 import HardWords from './HardWords'
 import HardPractice from './HardPractice'
-import QuizCard from './QuizCard'
+import QuizCard, { QuizInfo } from './QuizCard'
 import Quiz from './Quiz'
 import Search from './Search'
 import Notebook from './Notebook'
@@ -117,13 +117,16 @@ function App() {
               onStartPractice={(level) => { setPracticeLevel(level); navigate('hardPractice') }}
             />
           )}
+
           {view === 'hardPractice' && <HardPractice level={practiceLevel} onExit={() => navigate('hard')} />}
           {view === 'quizSetup' && (
-            <div className="page">
+            <div className="page quiz-setup">
               <h2 className="page-title">Sınav</h2>
-              <QuizCard onStart={(level, count) => startQuiz({ level, count })} />
+              <QuizCard onStart={(level, count, section) => startQuiz({ level, count, section })} />
+              <QuizInfo onNavigate={navigate} />
             </div>
           )}
+
           {view === 'quiz' && (
             <Quiz
               level={quizConfig.level}
@@ -131,11 +134,12 @@ function App() {
               listName={quizConfig.listName}
               themeId={quizConfig.themeId}
               themeName={quizConfig.themeName}
+              section={quizConfig.section}
               count={quizConfig.count}
               onExit={() => navigate(quizConfig.listId ? 'notebook' : quizConfig.themeId ? 'themes' : 'quizSetup')}
             />
           )}
-          {view === 'search' && <Search query={searchQuery} />}
+          {view === 'search' && <Search query={searchQuery} onQueryChange={handleSearchInput} onNavigate={navigate} />}
           {view === 'notebook' && <Notebook onBack={goHome} onStartQuiz={startQuiz} />}
           {view === 'themes' && <Themes onStartQuiz={startQuiz} />}
           {view === 'phonetics' && <PhoneticGuide onBack={goHome} />}
