@@ -47,6 +47,7 @@ namespace WordDeck.Dtos
         public string? Section { get; set; }   // reading / listening / writing / speaking (sınav)
         public string? Audio { get; set; }     // dinlemede seslendirilecek metin
         public string? Hint { get; set; }      // yazmada temiz Türkçe ipucu
+        public string? CleanMeaning { get; set; }   // ekranda gösterilecek kısa, temiz Türkçe anlam
     }
 
     // Zor kelime sorusuna verilen cevap

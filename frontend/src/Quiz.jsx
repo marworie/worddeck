@@ -97,7 +97,7 @@ function Quiz({ level, listId, listName, themeId, themeName, count, onExit }) {
       setMistakes(prev => [...prev, {
         wordId: question.wordId,
         headword: question.headword,
-        turkishMeaning: question.turkishMeaning,
+        turkishMeaning: question.cleanMeaning,
         type: question.questionType
       }])
     }
@@ -253,7 +253,7 @@ function Quiz({ level, listId, listName, themeId, themeName, count, onExit }) {
             <span>
               {flash.correct
                 ? '✅ Doğru'
-                : <>❌ Doğrusu: <b>{question.headword}</b>{question.turkishMeaning && ` · ${question.turkishMeaning}`}</>}
+                : <>❌ Doğrusu: <b>{question.headword}</b>{question.cleanMeaning && ` · ${question.cleanMeaning}`}</>}
             </span>
             <button className="btn btn-ghost" onClick={goNext}>Devam →</button>
           </div>

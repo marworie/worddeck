@@ -72,8 +72,9 @@ namespace WordDeck.Services
             if (string.IsNullOrWhiteSpace(definition)) return false;
             if (definition.Length < 15 || definition.Length > MaxDefinitionLength) return false;
             if (BadDefinition.IsMatch(definition)) return false;
-            // "run" sorusunda tanımda "running" geçerse cevap ele verilir
-            return !Regex.IsMatch(definition, $@"\b{Regex.Escape(headword)}", RegexOptions.IgnoreCase);
+             // Kelimenin kökü tanımda geçmesin: "ideal" sorusunda "ideas", "run" sorusunda "running" olmasın
+            string stem = headword.Length <= 4 ? headword : headword[..Math.Max(4, headword.Length - 2)];
+            return !Regex.IsMatch(definition, $@"\b{Regex.Escape(stem)}", RegexOptions.IgnoreCase);
         }
 
         // Boşluklu cümle: çok uzun değilse ve kelime cümlede geçiyorsa
@@ -92,7 +93,7 @@ namespace WordDeck.Services
                 types.AddRange(new[] { ChoiceTypes.Cloze, ChoiceTypes.Cloze, ChoiceTypes.Cloze });
             if (IsGoodDefinition(w.Definition, w.Headword))
                 types.AddRange(new[] { ChoiceTypes.Definition, ChoiceTypes.Definition });
-            if (ShortMeaning(w.TurkishMeaning) != null)
+            if (ShortMeaning(w.TurkishMeaning) is string tr && !LooksAlike(tr, w.Headword))
                 types.AddRange(new[] { ChoiceTypes.TrToEn, ChoiceTypes.TrToEn, ChoiceTypes.EnToTr });
             return types;
         }
@@ -126,15 +127,6 @@ namespace WordDeck.Services
             // Karıştır, tekrarları at: ağırlığı fazla olan tip öne gelme şansını korur
             foreach (var type in AvailableTypes(w).OrderBy(_ => rng.Next()).Distinct())
             {
-                var distractors = PickDistractors(w, type, poolList, 3, rng);
-                if (distractors.Count < 3) continue;
-
-                bool turkishOptions = type == ChoiceTypes.EnToTr;
-                var options = distractors.Append(w)
-                    .OrderBy(_ => rng.Next())
-                    .Select(d => new ChoiceOption(d.WordId, turkishOptions ? ShortMeaning(d.TurkishMeaning)! : d.Headword))
-                    .ToList();
-
                 string prompt = type switch
                 {
                     ChoiceTypes.Cloze => GoodCloze(w.Example, w.Headword)!,
@@ -142,6 +134,19 @@ namespace WordDeck.Services
                     ChoiceTypes.TrToEn => ShortMeaning(w.TurkishMeaning)!,
                     _ => w.Headword
                 };
+
+                // Soruda geçen bir kelime şık olmasın ("Absorbing all light" → şıklarda "light" olmasın)
+                var usablePool = poolList.Where(p =>
+                    !Regex.IsMatch(prompt, $@"\b{Regex.Escape(p.Headword)}\b", RegexOptions.IgnoreCase));
+
+                var distractors = PickDistractors(w, type, usablePool, 3, rng);
+                if (distractors.Count < 3) continue;
+
+                bool turkishOptions = type == ChoiceTypes.EnToTr;
+                var options = distractors.Append(w)
+                    .OrderBy(_ => rng.Next())
+                    .Select(d => new ChoiceOption(d.WordId, turkishOptions ? ShortMeaning(d.TurkishMeaning)! : d.Headword))
+                    .ToList();
 
                 return new ChoiceQuestion(type, prompt, options, w.WordId);
             }

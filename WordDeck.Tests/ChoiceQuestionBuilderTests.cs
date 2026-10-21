@@ -91,5 +91,20 @@ namespace WordDeck.Tests
             Assert.DoesNotContain("cat", q.Prompt);
             Assert.Contains("_____", q.Prompt);
         }
+
+        [Theory]
+        [InlineData("dram", "drama", true)]
+        [InlineData("taksi", "taxi", true)]
+        [InlineData("kedi", "cat", false)]
+        public void LooksAlike_DetectsGiveawayTranslations(string tr, string en, bool expected)
+        {
+            Assert.Equal(expected, ChoiceQuestionBuilder.LooksAlike(tr, en));
+        }
+
+        [Fact]
+        public void IsGoodDefinition_RejectsSameStem()
+        {
+            Assert.False(ChoiceQuestionBuilder.IsGoodDefinition("Pertaining to ideas, or to a given idea.", "ideal"));
+        }
     }
 }

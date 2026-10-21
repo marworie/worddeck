@@ -89,7 +89,7 @@ function ThemeDetail({ theme, onBack, onStartQuiz }) {
                 <b>{w.headword}</b>
                 <span className="muted small"> {posTr(w.partOfSpeech)}</span>
               </span>
-              <span className="theme-word-meaning">{w.turkishMeaning || '—'}</span>
+              <span className="theme-word-meaning">{w.turkishMeaning?.split(/[,;]/)[0].trim() || '—'}</span>
               <span className="level-badge">{w.level}</span>
               <span className={`theme-word-status ${status.cls}`}>{status.text}</span>
             </button>
@@ -97,7 +97,12 @@ function ThemeDetail({ theme, onBack, onStartQuiz }) {
         })}
       </div>
 
-      {openWord && <WordDetailModal word={openWord} onClose={() => setOpenWord(null)} />}
+      {openWord && (
+        <WordDetailModal
+          word={openWord}
+          onClose={() => { setOpenWord(null); setReloadKey(k => k + 1) }}
+        />
+      )}
     </div>
   )
 }

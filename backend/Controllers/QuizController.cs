@@ -87,7 +87,8 @@ namespace WordDeck.Controllers
                 q.Audio = built.Audio;
                 q.Hint = built.Hint;
                 if (built.QuestionType == QuestionTypes.Cloze) q.ClozeSentence = built.Prompt;
-
+                
+                q.CleanMeaning = ChoiceQuestionBuilder.ShortMeaning(q.TurkishMeaning);
                 questions.Add(q);
             }
 
