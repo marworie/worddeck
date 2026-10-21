@@ -36,6 +36,7 @@ function formatTime(seconds) {
   const s = seconds % 60
   return `${m}:${String(s).padStart(2, '0')}`
 }
+
 function Quiz({ level, listId, listName, themeId, themeName, sections, count, onExit }) {
   const { supported: micSupported } = useSpeechRecognition()
   const [questions, setQuestions] = useState(null)

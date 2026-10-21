@@ -122,7 +122,7 @@ function App() {
           {view === 'quizSetup' && (
             <div className="page quiz-setup">
               <h2 className="page-title">Sınav</h2>
-              <QuizCard onStart={(level, count, section) => startQuiz({ level, count, section })} />
+              <QuizCard onStart={(level, count, sections) => startQuiz({ level, count, sections })} />
               <QuizInfo onNavigate={navigate} />
             </div>
           )}
@@ -134,7 +134,7 @@ function App() {
               listName={quizConfig.listName}
               themeId={quizConfig.themeId}
               themeName={quizConfig.themeName}
-              section={quizConfig.section}
+              sections={quizConfig.sections}
               count={quizConfig.count}
               onExit={() => navigate(quizConfig.listId ? 'notebook' : quizConfig.themeId ? 'themes' : 'quizSetup')}
             />
