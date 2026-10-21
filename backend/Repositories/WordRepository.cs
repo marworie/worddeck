@@ -14,8 +14,8 @@ namespace WordDeck.Repositories
         Task<IEnumerable<FamilyMemberDto>> GetByHeadwordsAsync(IEnumerable<string> headwords);
         Task<Word?> GetNextForBackfillAsync();
         Task SaveDictionaryAsync(int id, string? definition, string? example);
-        Task<Word?> GetNextForMeaningAsync();
         Task SaveMeaningAsync(int id, string? meaning);
+        Task<Word?> GetNextForMeaningAsync(bool onlyWithMeaning = false);
     }
 
     public class WordRepository : BaseRepository, IWordRepository
@@ -116,14 +116,17 @@ namespace WordDeck.Repositories
                   WHERE Id = @Id",
                 new { Id = id, Definition = definition, Example = example });
         
-        // Sıradaki kelime: önce tema kelimeleri, sonra anlamı boş olanlar, sonra seviye sırası
-        public Task<Word?> GetNextForMeaningAsync() =>
+        // Sıradaki kelime: önce tema kelimeleri, sonra anlamı boş olanlar, sonra seviye sırası.
+        // onlyWithMeaning: kota dolunca sadece anlamı olanlar (sözlükten yenilenir, kota harcamaz)
+        public Task<Word?> GetNextForMeaningAsync(bool onlyWithMeaning = false) =>
             QuerySingleOrDefaultAsync<Word>(
                 @"SELECT TOP 1 w.* FROM Words w
                   WHERE w.MeaningFetchedAt IS NULL
+                    AND (@OnlyWithMeaning = 0 OR w.TurkishMeaning IS NOT NULL)
                   ORDER BY CASE WHEN EXISTS (SELECT 1 FROM ThemeWords tw WHERE tw.WordId = w.Id) THEN 0 ELSE 1 END,
                            CASE WHEN w.TurkishMeaning IS NULL THEN 0 ELSE 1 END,
-                           w.Level, w.Id");
+                           w.Level, w.Id",
+                new { OnlyWithMeaning = onlyWithMeaning });
 
         // Anlamı kaydet ve "denendi" diye işaretle
         public Task SaveMeaningAsync(int id, string? meaning) =>

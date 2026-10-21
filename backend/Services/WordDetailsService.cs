@@ -218,8 +218,19 @@ namespace WordDeck.Services
         private static string CleanHtml(string html) =>
             WebUtility.HtmlDecode(HtmlTags.Replace(StyleBlocks.Replace(html, ""), "")).Trim();
 
-        private async Task<(string? Definition, string? Example)> FetchDefinitionAsync(string headword, string partOfSpeech)
+        // Wiktionary bazen alt anlamları aynı tanıma alt satır olarak ekliyor: ilk satırı al,
+        // yine de çok uzunsa kes (veritabanı sütununa sığsın)
+        private const int MaxTextLength = 250;
+
+        private static string Shorten(string text)
         {
+            string first = text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                               .FirstOrDefault() ?? "";
+            return first.Length <= MaxTextLength ? first : first[..MaxTextLength].TrimEnd() + "…";
+        }
+
+        private async Task<(string? Definition, string? Example)> FetchDefinitionAsync(string headword, string partOfSpeech)
+        {                    
             var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(8);
             // Wikimedia, kimin istek attığını belirten bir User-Agent istiyor
@@ -248,7 +259,7 @@ namespace WordDeck.Services
 
                 foreach (var def in defs.EnumerateArray())
                 {
-                    string text = CleanHtml(def.TryGetProperty("definition", out var d) ? d.GetString() ?? "" : "");
+                    string text = Shorten(CleanHtml(def.TryGetProperty("definition", out var d) ? d.GetString() ?? "" : ""));
                     if (text.Length == 0) continue;
 
                     // Örnekler bir liste halinde geliyor, ilk dolu olanı al
@@ -257,7 +268,7 @@ namespace WordDeck.Services
                     {
                         exampleText = exs.EnumerateArray()
                             .Where(e => e.ValueKind == JsonValueKind.String)
-                            .Select(e => CleanHtml(e.GetString() ?? ""))
+                            .Select(e => Shorten(CleanHtml(e.GetString() ?? "")))
                             .FirstOrDefault(e => e.Length > 0);
                     }
 

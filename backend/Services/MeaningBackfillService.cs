@@ -37,25 +37,26 @@ namespace WordDeck.Services
                     var details = scope.ServiceProvider.GetRequiredService<WordDetailsService>();
                     var usage = scope.ServiceProvider.GetRequiredService<IApiUsageRepository>();
 
-                    // Bugünkü kullanım veritabanından okunur: uygulama yeniden başlasa da doğru kalır
                     var today = AppClock.Today;
                     int usedToday = await usage.GetCharsAsync("MyMemory", today);
+                    bool quotaLeft = usedToday < DailyCharLimit;
 
-                    if (usedToday >= DailyCharLimit)
+                    // Kota dolduysa sadece anlamı olan kelimeleri sözlükten yenile (kota harcamaz)
+                    var word = await words.GetNextForMeaningAsync(onlyWithMeaning: !quotaLeft);
+
+                    if (word == null)
                     {
-                        wait = TimeSpan.FromHours(1);   // bugünkü pay doldu, sonra tekrar bak
-                    }
-                    else
-                    {
-                        var word = await words.GetNextForMeaningAsync();
-                        if (word == null)
+                        if (quotaLeft)
                         {
                             _logger.LogInformation("Anlam doldurma bitti ({Count} kelime).", done);
                             return;
                         }
-
+                        wait = TimeSpan.FromHours(1);   // bugünlük yapılacak kalmadı: boş kelimeler için yarını bekle
+                    }
+                    else
+                    {
                         // MyMemory sadece anlamı hiç olmayan kelimede ve kota varken kullanılır
-                        bool allowMyMemory = word.TurkishMeaning == null && usedToday < DailyCharLimit;
+                        bool allowMyMemory = word.TurkishMeaning == null && quotaLeft;
                         var (ok, meaning, usedMyMemory) = await details.FetchMeaningOnlyAsync(word.Headword, word.PartOfSpeech, allowMyMemory);
 
                         if (usedMyMemory)
@@ -65,13 +66,9 @@ namespace WordDeck.Services
                         {
                             wait = ErrorDelay;   // işaretleme: sonra tekrar denensin
                         }
-                        else if (meaning == null && word.TurkishMeaning == null && !allowMyMemory)
-                        {
-                            wait = TimeSpan.FromHours(1);   // sözlükte yok, kota da dolu: yarın MyMemory'yle denensin
-                        }
                         else
                         {
-                            await words.SaveMeaningAsync(word.Id, meaning);
+                            await words.SaveMeaningAsync(word.Id, meaning);   // yeni anlam yoksa eskisi korunur (COALESCE)
                             if (++done % 100 == 0)
                                 _logger.LogInformation("Anlam doldurma: {Count} kelime (bugün MyMemory {Used} karakter).", done, usedToday);
                         }
