@@ -153,9 +153,8 @@ export function ChoiceQuestion({ question, answered, onAnswer }) {
 
 // ===== 2. Boşluk doldurma: örnek cümlede kelime gizli =====
 export function ClozeQuestion({ question, answered, onAnswer }) {
-  // Sınavda sadece temiz ipucu (hint), Zorlandıklarım'da Türkçe anlam
-  const hint = question.section ? question.hint : question.turkishMeaning
-
+  // İpucu backend'den temiz gelir (anlam bozuksa hiç gelmez)
+  const hint = question.hint
   // Boşluğun öncesi örnek cümleyle aynı; oradan sonraki kelime cümledeki asıl hal ("encouraged")
   const before = question.clozeSentence.split('_____')[0]
   const form = question.example?.slice(before.length).match(/^[\w'-]+/)?.[0]

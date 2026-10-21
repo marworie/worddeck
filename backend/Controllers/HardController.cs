@@ -14,8 +14,13 @@ namespace WordDeck.Controllers
     public class HardController : ControllerBase
     {
         private readonly IHardRepository _hard;
+        private readonly IPlacementRepository _placement;   // çeldirici havuzu
 
-        public HardController(IHardRepository hard) => _hard = hard;
+        public HardController(IHardRepository hard, IPlacementRepository placement)
+        {
+            _hard = hard;
+            _placement = placement;
+        }
 
         private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
@@ -33,30 +38,67 @@ namespace WordDeck.Controllers
                 return BadRequest(new { message = "Geçersiz seviye." });
 
             var words = await _hard.GetPracticeWordsAsync(GetUserId(), level, AppClock.Today);
+            var pool = (await _placement.GetPoolAsync(level, 300)).ToList();
             var questions = new List<PracticeQuestionDto>();
 
             foreach (var q in words)
             {
-                string? cloze = PracticeQuestionBuilder.MakeCloze(q.Example, q.Headword);
-                q.QuestionType = PracticeQuestionBuilder.PickType((HardState)q.HardState, q.HardStreak, cloze != null);
+                var info = new WordInfo(q.WordId, q.Headword, q.PartOfSpeech, q.TurkishMeaning, q.Definition, q.Example);
+                string? cloze = ChoiceQuestionBuilder.GoodCloze(q.Example, q.Headword);
+                string? meaning = QuizSectionBuilder.CleanMeaning(info);
 
-                if (q.QuestionType == QuestionTypes.Cloze)
-                    q.ClozeSentence = cloze;
+                // Kelimenin durumuna göre istenen tip; kurulamazsa sırayla daha basit tiplere düş.
+                // Dinleme her zaman kurulabilir (anlam göstermiyor)
+                string wanted = PracticeQuestionBuilder.PickType((HardState)q.HardState, q.HardStreak, cloze != null);
+                var order = new[] { wanted, QuestionTypes.Choice, QuestionTypes.Cloze, QuestionTypes.Typing, QuestionTypes.Listening }.Distinct();
 
-                if (q.QuestionType == QuestionTypes.Choice)
-                {
-                    // 3 çeldirici + doğru cevap, karışık sırada
-                    var distractors = await _hard.GetDistractorsAsync(q.Level, q.PartOfSpeech, q.WordId, 3);
-                    q.Choices = distractors
-                        .Append(new ChoiceDto { WordId = q.WordId, Headword = q.Headword })
-                        .OrderBy(_ => Random.Shared.Next())
-                        .ToList();
-                }
+                foreach (var type in order)
+                    if (TryBuild(q, type, info, pool, cloze, meaning)) break;
 
+                q.CleanMeaning = ChoiceQuestionBuilder.ShortMeaning(q.TurkishMeaning);
                 questions.Add(q);
             }
 
             return Ok(questions);
+        }
+
+        // Soruyu istenen tipte temiz içerikle kurar. Gerekli bilgi yoksa false döner
+        private static bool TryBuild(PracticeQuestionDto q, string type, WordInfo info, List<WordInfo> pool,
+                                     string? cloze, string? meaning)
+        {
+            switch (type)
+            {
+                case QuestionTypes.Choice:
+                    var built = ChoiceQuestionBuilder.Build(info, pool);
+                    if (built == null) return false;
+                    q.ChoiceType = built.Type;
+                    q.Prompt = built.Prompt;
+                    q.Options = built.Options;
+                    break;
+
+                case QuestionTypes.Cloze:
+                    if (cloze == null) return false;
+                    q.ClozeSentence = cloze;
+                    q.Hint = meaning;   // temiz değilse ipucu hiç gösterilmez
+                    break;
+
+                case QuestionTypes.Typing:
+                case QuestionTypes.Speaking:
+                    // Önce temiz Türkçe anlam, yoksa boşluklu cümle
+                    string? prompt = meaning ?? cloze;
+                    if (prompt == null) return false;
+                    q.Prompt = prompt;
+                    break;
+
+                case QuestionTypes.Listening:
+                    break;
+
+                default:
+                    return false;
+            }
+
+            q.QuestionType = type;
+            return true;
         }
 
         // POST api/Hard/answer

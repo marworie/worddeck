@@ -165,7 +165,8 @@ function HardPractice({ level, onExit }) {
             {/* Doğru cevabı her zaman göster (doğruysa da pekişsin) */}
             <p className="q-correct-answer">
               <b>{question.headword}</b>
-              {question.turkishMeaning && <span className="muted"> · {question.turkishMeaning}</span>}
+                {(question.cleanMeaning || question.turkishMeaning?.split(/[,;]/)[0]) &&
+                <span className="muted"> · {question.cleanMeaning || question.turkishMeaning.split(/[,;]/)[0]}</span>}
             </p>
             {result.heard && !result.correct && <p className="muted small">Duyduğum: "{result.heard}"</p>}
             {question.example && <p className="example">"{question.example}"</p>}
