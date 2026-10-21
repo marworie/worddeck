@@ -12,6 +12,8 @@ import { useSpeechRecognition } from './useSpeechRecognition'
 import { checkSpoken } from './answerCheck'
 import { speak as speakText } from './preferences'
 import { ipaToTurkish } from './phonetics'
+import { cleanMeanings } from './meaning'
+import { posTr } from './labels'
 
 // card: oturumdan gelen kart, flipped: arka yüz mü görünüyor, onFlip: çevirme
 function Flashcard({ card, flipped, onFlip }) {
@@ -48,7 +50,7 @@ function Flashcard({ card, flipped, onFlip }) {
     speakText(card.headword)
   }
 
-  // 🎤 Kelimeyi söyle, tarayıcı doğru anlıyor mu bak
+  // Kelimeyi söyle, tarayıcı doğru anlıyor mu bak
   async function checkPronunciation(e) {
     e.stopPropagation()   // kart dönmesin
     setSpeechResult(null)
@@ -60,10 +62,10 @@ function Flashcard({ card, flipped, onFlip }) {
     }
   }
 
-    // ✏️ Düzelt: düzenleme kutusunu mevcut anlamla aç
+    // Düzelt: düzenleme kutusunu mevcut anlamla aç
   function startEdit(e) {
     e.stopPropagation()   // kart dönmesin
-    setEditValue(details?.turkishMeaning || '')
+    setEditValue(details?.isCustomMeaning ? details.turkishMeaning : cleanMeanings(details?.turkishMeaning) || '')
     setIsEditing(true)
   }
 
@@ -90,9 +92,8 @@ function Flashcard({ card, flipped, onFlip }) {
             <span className="level-badge">{card.level}</span>
             {card.isNew && <span className="new-badge">Yeni</span>}
           </div>
-
           <h2 className="flashcard-word">{card.headword}</h2>
-          <p className="flashcard-pos">{card.partOfSpeech}</p>
+          <p className="flashcard-pos">{posTr(card.partOfSpeech)}</p>
            {phonetic && (
             <p className="flashcard-phonetic">
               {phonetic}
@@ -152,7 +153,8 @@ function Flashcard({ card, flipped, onFlip }) {
                 ) : (
                   <>
                     <p className="tr-meaning">
-                      {details.turkishMeaning || '—'}
+                      {/* Kendi yazdığın anlam olduğu gibi, otomatik çeviri temizlenerek */}
+                      {(details.isCustomMeaning ? details.turkishMeaning : cleanMeanings(details.turkishMeaning)) || '—'}
                       {details.isCustomMeaning && <span className="custom-tag">senin</span>}
                     </p>
                     <button className="edit-meaning-btn" onClick={startEdit} title="Anlamı düzelt">✏️</button>
