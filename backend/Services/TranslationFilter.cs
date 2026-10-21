@@ -21,6 +21,7 @@ namespace WordDeck.Services
         // Tek kelimenin çevirisi: kısa olmalı; link, kod, HTML ya da başka alfabe içermemeli
         public static bool IsUsableWord(string text, string source)
         {
+            if (string.IsNullOrWhiteSpace(text) || !text.Any(char.IsLetter)) return false;
             text = WebUtility.HtmlDecode(text).Trim();
 
             if (text.Length < 2 || text.Length > 40) return false;
