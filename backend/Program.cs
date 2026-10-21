@@ -81,6 +81,7 @@ builder.Services.AddHostedService<MeaningBackfillService>();
 builder.Services.AddScoped<IPlacementRepository, PlacementRepository>();
 builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
 builder.Services.AddScoped<IHomeRepository, HomeRepository>();
+builder.Services.AddScoped<IApiUsageRepository, ApiUsageRepository>();
 
 var app = builder.Build();
 

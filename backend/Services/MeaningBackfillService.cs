@@ -25,48 +25,48 @@ namespace WordDeck.Services
         {
             if (!_enabled) return;
             await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
-
-            DateTime day = AppClock.Today; // sayaç burda başlatılıyor yerel değişken
-            int usedToday = 0, done = 0;  // uygulama yeniden başlayınca 0'dan başlıyor
+            int done = 0;
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                // gün değişince sayaç sıfırlanır
-                if (AppClock.Today != day) { day = AppClock.Today; usedToday = 0; }
-
-                // bugünkü payını kullandıysa bir saat sonra tekrar bak
-                if (usedToday >= DailyCharLimit)
-                {
-                    await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
-                    continue;
-                }
-
                 var wait = Delay;
                 try
                 {
                     using var scope = _scopeFactory.CreateScope();
                     var words = scope.ServiceProvider.GetRequiredService<IWordRepository>();
                     var details = scope.ServiceProvider.GetRequiredService<WordDetailsService>();
+                    var usage = scope.ServiceProvider.GetRequiredService<IApiUsageRepository>();
 
-                    var word = await words.GetNextForMeaningAsync();
-                    if (word == null)
+                    // Bugünkü kullanım veritabanından okunur: uygulama yeniden başlasa da doğru kalır
+                    var today = AppClock.Today;
+                    int usedToday = await usage.GetCharsAsync("MyMemory", today);
+
+                    if (usedToday >= DailyCharLimit)
                     {
-                        _logger.LogInformation("Anlam doldurma bitti ({Count} kelime).", done);
-                        return;
-                    }
-
-                    var (ok, meaning) = await details.FetchMeaningOnlyAsync(word.Headword, word.PartOfSpeech);
-                    usedToday += word.Headword.Length + 3;   // fiillerde "to " da gönderiliyor
-
-                    if (ok)
-                    {
-                        await words.SaveMeaningAsync(word.Id, meaning);
-                        if (++done % 100 == 0)
-                            _logger.LogInformation("Anlam doldurma: {Count} kelime (bugün {Used} karakter).", done, usedToday);
+                        wait = TimeSpan.FromHours(1);   // bugünkü pay doldu, sonra tekrar bak
                     }
                     else
                     {
-                        wait = ErrorDelay;   // işaretleme: sonra tekrar denensin
+                        var word = await words.GetNextForMeaningAsync();
+                        if (word == null)
+                        {
+                            _logger.LogInformation("Anlam doldurma bitti ({Count} kelime).", done);
+                            return;
+                        }
+
+                        var (ok, meaning) = await details.FetchMeaningOnlyAsync(word.Headword, word.PartOfSpeech);
+                        await usage.AddCharsAsync("MyMemory", today, word.Headword.Length + 3);   // fiillerde "to " da gidiyor
+
+                        if (ok)
+                        {
+                            await words.SaveMeaningAsync(word.Id, meaning);
+                            if (++done % 100 == 0)
+                                _logger.LogInformation("Anlam doldurma: {Count} kelime (bugün {Used} karakter).", done, usedToday);
+                        }
+                        else
+                        {
+                            wait = ErrorDelay;   // işaretleme: sonra tekrar denensin
+                        }
                     }
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
