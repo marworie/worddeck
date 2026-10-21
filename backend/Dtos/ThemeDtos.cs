@@ -10,5 +10,6 @@ namespace WordDeck.Dtos
         public int WordCount { get; set; }
         public int StudiedCount { get; set; }   // çalışmaya eklenmiş
         public int LearnedCount { get; set; }   // öğrenilmiş (son kutuya ulaşmış)
+        public int KnownCount { get; set; } // bilinen
     }
 }

@@ -52,12 +52,12 @@ function Stats() {
       {/* Özet kartlar */}
       <div className="stats-cards">
         <StatCard label="Çalışılan kelime" value={stats.totalStudied} />
-        <StatCard label="Öğrenilen" value={stats.learned} />
+        <StatCard label="Bilinen" value={stats.known} sub={stats.totalStudied ? `Çalışılanların %${Math.round((stats.known / stats.totalStudied) * 100)}'i` : null}/>
+        <StatCard label="Kalıcı Öğrenilen" value={stats.learned} />
         <StatCard label="Toplam tekrar" value={stats.totalReviews} />
         <StatCard label="En uzun seri" value={`${stats.longestStreak} gün`} />
         <StatCard label="Başarı oranı" value={stats.successRate != null ? `%${stats.successRate}` : '—'} />
       </div>
-
       <section className="panel">
         <div className="chart-head">
           <h3 className="section-title">Son 30 gün</h3>
@@ -136,11 +136,12 @@ function Stats() {
   )
 }
 
-function StatCard({ label, value }) {
+function StatCard({ label, value, sub }) {
   return (
     <div className="stat-card">
       <span className="stat-label">{label}</span>
       <span className="stat-value">{value}</span>
+      {sub && <span className="muted-mall">{sub}</span>}
     </div>
   )
 }

@@ -38,10 +38,11 @@ namespace WordDeck.Services
         }
 
         // Kelime çevirisi ve sözlük aynı anda, birbirinden bağımsız çekilir;
-        // tanım gelirse onun Türkçesi de çevrilir
+        // çeviri burada yapılıyor sadece kelime açılınca çağrılır
         public async Task<WordDetailsResult> FetchAsync(string headword, string partOfSpeech)
         {
-            var meaningTask = TryAsync(() => FetchTurkishAsync(headword, partOfSpeech), "MyMemory", headword);            var dictTask = TryAsync(() => FetchDefinitionAsync(headword, partOfSpeech), "Wiktionary", headword);
+            var meaningTask = TryAsync(() => FetchTurkishAsync(headword, partOfSpeech), "MyMemory", headword);           
+            var dictTask = TryAsync(() => FetchDefinitionAsync(headword, partOfSpeech), "Wiktionary", headword);
             await Task.WhenAll(meaningTask, dictTask);
 
             var (meaningOk, meaning) = meaningTask.Result;

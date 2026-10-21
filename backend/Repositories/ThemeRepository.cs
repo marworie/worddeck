@@ -22,13 +22,14 @@ namespace WordDeck.Repositories
                 @"SELECT t.Id, t.Slug, t.Name, t.Icon,
                          COUNT(tw.WordId) AS WordCount,
                          COUNT(uw.WordId) AS StudiedCount,
+                         ISNULL(SUM(CASE WHEN uw.Box >= @KnownBox THEN 1 ELSE 0 END), 0) AS KnownCount,
                          ISNULL(SUM(CASE WHEN uw.Box >= @LearnedBox THEN 1 ELSE 0 END), 0) AS LearnedCount
                   FROM Themes t
                   LEFT JOIN ThemeWords tw ON tw.ThemeId = t.Id
                   LEFT JOIN UserWords uw ON uw.WordId = tw.WordId AND uw.UserId = @UserId
                   GROUP BY t.Id, t.Slug, t.Name, t.Icon, t.SortOrder
                   ORDER BY t.SortOrder",
-                new { UserId = userId, LearnedBox = LeitnerService.LearnedBox });
+                new { UserId = userId, LearnedBox = LeitnerService.LearnedBox, KnownBox = LeitnerService.KnownBox });
 
         public async Task<bool> ExistsAsync(int themeId) =>
             await ExecuteScalarAsync<int>("SELECT COUNT(1) FROM Themes WHERE Id = @Id", new { Id = themeId }) > 0;

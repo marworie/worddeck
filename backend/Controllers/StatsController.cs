@@ -52,6 +52,7 @@ namespace WordDeck.Controllers
             {
                 TotalStudied = totals.TotalStudied,
                 Learned = totals.Learned,
+                Known = totals.Known,
                 TotalReviews = await _stats.GetTotalReviewsAsync(userId),
                 CurrentStreak = StreakCalculator.Calculate(dates, today),
                 LongestStreak = StreakCalculator.Longest(dates),

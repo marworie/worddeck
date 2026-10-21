@@ -30,6 +30,7 @@ namespace WordDeck.Dtos
     public class StatsTotalsRow
     {
         public int TotalStudied { get; set; }
+        public int Known { get; set; }
         public int Learned { get; set; }
         public int Correct { get; set; }
         public int Wrong { get; set; }
@@ -39,6 +40,7 @@ namespace WordDeck.Dtos
     public class StatsDto
     {
         public int TotalStudied { get; set; }
+        public int Known { get; set; }  // en az bir kez Biliyorum / Çok kolay denmiş (2. kutu ve üstü)
         public int Learned { get; set; }
         public int TotalReviews { get; set; }
         public int CurrentStreak { get; set; }

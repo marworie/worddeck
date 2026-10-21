@@ -1,4 +1,5 @@
 using WordDeck.Dtos;
+using WordDeck.Services;
 
 namespace WordDeck.Repositories
 {
@@ -19,13 +20,13 @@ namespace WordDeck.Repositories
         public async Task<StatsTotalsRow> GetTotalsAsync(int userId) =>
             await QuerySingleOrDefaultAsync<StatsTotalsRow>(
                 @"SELECT COUNT(*) AS TotalStudied,
+                         ISNULL(SUM(CASE WHEN Box >= @KnownBox THEN 1 ELSE 0 END), 0) AS Known,
                          ISNULL(SUM(CASE WHEN Box = 6 THEN 1 ELSE 0 END), 0) AS Learned,
                          ISNULL(SUM(CorrectCount), 0) AS Correct,
                          ISNULL(SUM(WrongCount), 0) AS Wrong
                   FROM UserWords
                   WHERE UserId = @UserId",
-                new { UserId = userId }) ?? new StatsTotalsRow();
-
+                new { UserId = userId, KnownBox = LeitnerService.KnownBox }) ?? new StatsTotalsRow();
         public Task<int> GetTotalReviewsAsync(int userId) =>
             ExecuteScalarAsync<int>(
                 "SELECT ISNULL(SUM(CardsReviewed), 0) FROM StudyDays WHERE UserId = @UserId",

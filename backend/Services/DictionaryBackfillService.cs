@@ -4,6 +4,7 @@ namespace WordDeck.Services
 {
     // Uygulama çalışırken arka planda, detayı hiç çekilmemiş kelimelerin tanımını ve
     // örnek cümlesini Wiktionary'den sırayla doldurur. Sınav ve seviye testi bunlarla soru üretir.
+    // sadece ingilizce tanımları doldurur, çeviri yapılmaz
     public class DictionaryBackfillService : BackgroundService
     {
         private static readonly TimeSpan Delay = TimeSpan.FromSeconds(2);        // Wiktionary'yi yormamak için
@@ -21,7 +22,7 @@ namespace WordDeck.Services
             _enabled = configuration.GetValue("DictionaryBackfill", true);
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken) // arka planda ingilizce kelimeleri dolduran servis
         {
             if (!_enabled) return;
 

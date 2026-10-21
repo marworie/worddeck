@@ -13,12 +13,14 @@ import WordDetailModal from './WordDetailModal'
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1']
 const LEARNED_BOX = 6   // backend'deki LeitnerService.LearnedBox ile aynı
 
-// Kelimenin çalışma durumu
+// Kelimenin çalışma durumu (ana sayfadaki "biliyorsun" mantığıyla aynı: 2. kutu ve üstü)
 function wordStatus(box) {
   if (box == null) return { text: 'Yeni', cls: 'new' }
   if (box >= LEARNED_BOX) return { text: 'Öğrenildi', cls: 'learned' }
-  return { text: `Kutu ${box}`, cls: 'studying' }
+  if (box >= 2) return { text: 'Biliyorsun', cls: 'learned' }
+  return { text: 'Çalışılıyor', cls: 'studying' }
 }
+
 
 // Tek bir temanın sayfası
 function ThemeDetail({ theme, onBack, onStartQuiz }) {
@@ -132,14 +134,14 @@ function Themes({ onStartQuiz }) {
       ) : (
         <div className="theme-grid">
           {themes.map(t => {
-            const pct = t.wordCount ? Math.round((t.learnedCount / t.wordCount) * 100) : 0
+            const pct = t.wordCount ? Math.round((t.knownCount / t.wordCount) * 100) : 0
             return (
               <button key={t.id} className="theme-card panel" onClick={() => setSelected(t)}>
                 <span className="theme-icon">{t.icon}</span>
                 <b className="theme-name">{t.name}</b>
                 <span className="muted small">{t.wordCount} kelime · {t.studiedCount} çalışılıyor</span>
                 <div className="theme-progress"><div style={{ width: `${pct}%` }} /></div>
-                <span className="muted small">%{pct} öğrenildi</span>
+                <span className="muted small">%{pct} biliyorsun</span>
               </button>
             )
           })}
