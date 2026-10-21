@@ -54,18 +54,26 @@ namespace WordDeck.Services
                             return;
                         }
 
-                        var (ok, meaning) = await details.FetchMeaningOnlyAsync(word.Headword, word.PartOfSpeech);
-                        await usage.AddCharsAsync("MyMemory", today, word.Headword.Length + 3);   // fiillerde "to " da gidiyor
+                        // MyMemory sadece anlamı hiç olmayan kelimede ve kota varken kullanılır
+                        bool allowMyMemory = word.TurkishMeaning == null && usedToday < DailyCharLimit;
+                        var (ok, meaning, usedMyMemory) = await details.FetchMeaningOnlyAsync(word.Headword, word.PartOfSpeech, allowMyMemory);
 
-                        if (ok)
+                        if (usedMyMemory)
+                            await usage.AddCharsAsync("MyMemory", today, word.Headword.Length + 3);   // fiillerde "to " da gidiyor
+
+                        if (!ok)
                         {
-                            await words.SaveMeaningAsync(word.Id, meaning);
-                            if (++done % 100 == 0)
-                                _logger.LogInformation("Anlam doldurma: {Count} kelime (bugün {Used} karakter).", done, usedToday);
+                            wait = ErrorDelay;   // işaretleme: sonra tekrar denensin
+                        }
+                        else if (meaning == null && word.TurkishMeaning == null && !allowMyMemory)
+                        {
+                            wait = TimeSpan.FromHours(1);   // sözlükte yok, kota da dolu: yarın MyMemory'yle denensin
                         }
                         else
                         {
-                            wait = ErrorDelay;   // işaretleme: sonra tekrar denensin
+                            await words.SaveMeaningAsync(word.Id, meaning);
+                            if (++done % 100 == 0)
+                                _logger.LogInformation("Anlam doldurma: {Count} kelime (bugün MyMemory {Used} karakter).", done, usedToday);
                         }
                     }
                 }

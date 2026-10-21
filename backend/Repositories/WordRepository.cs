@@ -116,12 +116,13 @@ namespace WordDeck.Repositories
                   WHERE Id = @Id",
                 new { Id = id, Definition = definition, Example = example });
         
-        // Anlamı boş sıradaki kelime: önce temalardaki kelimeler, sonra seviye sırasıyla (A1 → C1)
+        // Sıradaki kelime: önce tema kelimeleri, sonra anlamı boş olanlar, sonra seviye sırası
         public Task<Word?> GetNextForMeaningAsync() =>
             QuerySingleOrDefaultAsync<Word>(
                 @"SELECT TOP 1 w.* FROM Words w
-                  WHERE w.TurkishMeaning IS NULL AND w.MeaningFetchedAt IS NULL
+                  WHERE w.MeaningFetchedAt IS NULL
                   ORDER BY CASE WHEN EXISTS (SELECT 1 FROM ThemeWords tw WHERE tw.WordId = w.Id) THEN 0 ELSE 1 END,
+                           CASE WHEN w.TurkishMeaning IS NULL THEN 0 ELSE 1 END,
                            w.Level, w.Id");
 
         // Anlamı kaydet ve "denendi" diye işaretle

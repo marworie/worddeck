@@ -66,9 +66,19 @@ namespace WordDeck.Services
             return (ok, dict.Definition, dict.Example);
         }
 
-        // Sadece Türkçe anlam: arka plan doldurma için. Ok = false ise hata ya da kota doldu
-        public Task<(bool Ok, string? Meaning)> FetchMeaningOnlyAsync(string headword, string partOfSpeech) =>
-            TryAsync(() => FetchTurkishAsync(headword, partOfSpeech), "MyMemory", headword);
+        // Sadece Türkçe anlam: arka plan doldurma için.
+        // allowMyMemory = false ise sadece sözlüğe bakar (kelimenin zaten anlamı varsa kota harcanmasın).
+        // UsedMyMemory: kota sayacına eklensin mi
+        public async Task<(bool Ok, string? Meaning, bool UsedMyMemory)> FetchMeaningOnlyAsync(
+            string headword, string partOfSpeech, bool allowMyMemory = true)
+        {
+            var (dictOk, fromDictionary) = await TryAsync(() => FetchTurkishFromWiktionaryAsync(headword, partOfSpeech), "Wiktionary (çeviri)", headword);
+            if (dictOk && fromDictionary != null) return (true, fromDictionary, false);
+            if (!allowMyMemory) return (dictOk, null, false);
+
+            var (ok, meaning) = await TryAsync(() => FetchTurkishFromMyMemoryAsync(headword, partOfSpeech), "MyMemory", headword);
+            return (ok, meaning, true);
+        }
 
 
         // Örnek cümlenin Türkçesi (hata olursa null)
@@ -112,10 +122,26 @@ namespace WordDeck.Services
                 throw new InvalidOperationException("MyMemory günlük kotası doldu.");
         }
 
+        // Türkçe anlam: önce sözlük (Wiktionary çeviri tablosu, insan eliyle girilmiş), yoksa çeviri API'si (MyMemory)
+        private async Task<string?> FetchTurkishAsync(string headword, string partOfSpeech)
+        {
+            var (ok, fromDictionary) = await TryAsync(() => FetchTurkishFromWiktionaryAsync(headword, partOfSpeech), "Wiktionary (çeviri)", headword);
+            if (ok && fromDictionary != null) return fromDictionary;
+            return await FetchTurkishFromMyMemoryAsync(headword, partOfSpeech);
+        }
+
+        private async Task<string?> FetchTurkishFromWiktionaryAsync(string headword, string partOfSpeech)
+        {
+            string? wikitext = await _wiktionary.GetWikitextAsync(headword);
+            if (wikitext == null) return null;
+            var english = WiktionaryClient.EnglishSection(wikitext) ?? wikitext;
+            return WiktionaryTranslationParser.FindTurkish(english, partOfSpeech);
+        }
+
         // Tek kelime çevirisi: tüm eşleşmelere bakıp tam bu kelimeye ait, en yüksek puanlı, anlamlı çeviriyi seçer
         // Tek kelime çevirisi: en yüksek puanlı, birbirinden farklı en fazla 3 anlamı döndürür.
         // Fiilleri "to run" şeklinde soruyoruz: hem mastar halinde ("koşmak") hem daha doğru çeviri geliyor
-        private async Task<string?> FetchTurkishAsync(string headword, string partOfSpeech)
+        private async Task<string?> FetchTurkishFromMyMemoryAsync(string headword, string partOfSpeech)
         {
             bool isVerb = partOfSpeech.Contains("verb", StringComparison.OrdinalIgnoreCase)
                        && !partOfSpeech.Contains("adverb", StringComparison.OrdinalIgnoreCase)
