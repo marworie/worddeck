@@ -21,23 +21,29 @@ namespace WordDeck.Services
     // Sınavı okuma / dinleme / yazma / konuşma bölümlerine göre kurar. Veritabanına dokunmaz.
     public static class QuizSectionBuilder
     {
-        // 10 soru → okuma 3, dinleme 3, yazma 2, konuşma 2; bölüm sırasına göre dizilir
-        public static List<string> AssignSections(int count) =>
-            Enumerable.Range(0, count)
-                .Select(i => QuizSections.All[i % QuizSections.All.Length])
+        // Soruları seçilen bölümlere eşit dağıtır ve bölüm sırasına dizer.
+        // 10 soru, 4 bölüm → 3-3-2-2; 10 soru, okuma + dinleme → 5-5
+        public static List<string> AssignSections(int count, IReadOnlyList<string>? chosen = null)
+        {
+            var list = chosen is { Count: > 0 } ? chosen : QuizSections.All;
+            return Enumerable.Range(0, count)
+                .Select(i => list[i % list.Count])
                 .OrderBy(s => Array.IndexOf(QuizSections.All, s))
                 .ToList();
+        }
 
         // Ekranda gösterilebilecek temiz Türkçe anlam: kısa, bozuk değil, cevabı ele vermiyor
         public static string? CleanMeaning(WordInfo w) =>
             ChoiceQuestionBuilder.ShortMeaning(w.TurkishMeaning) is string m && !ChoiceQuestionBuilder.LooksAlike(m, w.Headword)
                 ? m : null;
 
-        // İstenen bölümde soru kurulamazsa sırayla diğer bölümleri dener; hiçbiri olmazsa null
-        public static QuizQuestion? BuildWithFallback(string section, WordInfo w, List<WordInfo> pool, Random? rng = null)
+        // İstenen bölümde soru kurulamazsa izin verilen diğer bölümleri sırayla dener; hiçbiri olmazsa null.
+        // allowed boşsa 4 bölümün hepsi denenebilir
+        public static QuizQuestion? BuildWithFallback(string section, WordInfo w, List<WordInfo> pool, Random? rng = null, IReadOnlyList<string>? allowed = null)
         {
             rng ??= Random.Shared;
-            foreach (var s in QuizSections.All.OrderBy(s => s == section ? 0 : 1))
+            var candidates = allowed is { Count: > 0 } ? allowed : QuizSections.All;
+            foreach (var s in candidates.OrderBy(s => s == section ? 0 : 1))
             {
                 var q = Build(s, w, pool, rng);
                 if (q != null) return q;

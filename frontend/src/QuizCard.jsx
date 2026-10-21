@@ -1,6 +1,7 @@
 // ============================================================
 // QuizCard.jsx
-// Ana sayfadaki "Sınav" kartı: seviye ve soru sayısı seçimi, son sınavlar.
+// Sınav sayfası: seviye, soru sayısı ve bölüm seçimi, son sınavlar.
+// Altında bölümlerin tanıtımı ve diğer sınav kısayolları (QuizInfo).
 // ============================================================
 
 import { useEffect, useState } from 'react'
@@ -11,24 +12,32 @@ const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1']
 const COUNTS = [10, 20, 30]
 
 const SECTIONS = [
-  { key: '', label: 'Tümü' },
   { key: 'reading', label: '📖 Okuma' },
   { key: 'listening', label: '🎧 Dinleme' },
   { key: 'writing', label: '✍️ Yazma' },
   { key: 'speaking', label: '🎤 Konuşma' }
 ]
+const ALL_SECTIONS = SECTIONS.map(s => s.key)
 
-// onStart(level, count): sınavı başlatmak için
+// onStart(level, count, sections): sınavı başlatmak için
 function QuizCard({ onStart }) {
   const [level, setLevel] = useState('A1')
   const [count, setCount] = useState(10)
   const [history, setHistory] = useState([])
-  const [section, setSection] = useState('')   // '' = 4 bölüm karışık
+  const [sections, setSections] = useState(ALL_SECTIONS)   // seçili bölümler
   const { supported: micSupported } = useSpeechRecognition()
 
   useEffect(() => {
     apiFetch('/api/Quiz/history').then(r => (r.ok ? r.json() : [])).then(setHistory)
   }, [])
+
+  // Bölümü aç/kapat; en az bir bölüm seçili kalsın
+  function toggleSection(key) {
+    setSections(prev => {
+      if (prev.includes(key)) return prev.length > 1 ? prev.filter(s => s !== key) : prev
+      return ALL_SECTIONS.filter(s => prev.includes(s) || s === key)   // sırayı koru
+    })
+  }
 
   return (
     <div className="quiz-card panel">
@@ -60,13 +69,19 @@ function QuizCard({ onStart }) {
         </div>
 
         <div className="quiz-option-group">
-          <span className="network-title">Bölüm</span>
+          <span className="network-title">Bölümler</span>
           <div className="chip-row">
+            <button
+              className={`filter-chip ${sections.length === ALL_SECTIONS.length ? 'active' : ''}`}
+              onClick={() => setSections(ALL_SECTIONS)}
+            >
+              Tümü
+            </button>
             {SECTIONS.map(s => (
               <button
                 key={s.key}
-                className={`filter-chip ${section === s.key ? 'active' : ''}`}
-                onClick={() => setSection(s.key)}
+                className={`filter-chip ${sections.includes(s.key) ? 'active' : ''}`}
+                onClick={() => toggleSection(s.key)}
                 disabled={s.key === 'speaking' && !micSupported}
                 title={s.key === 'speaking' && !micSupported ? 'Bu tarayıcı mikrofonu desteklemiyor' : undefined}
               >
@@ -75,9 +90,10 @@ function QuizCard({ onStart }) {
             ))}
           </div>
         </div>
-        
-        <button className="btn btn-primary quiz-start-btn" onClick={() => onStart(level, count, section)}></button>
-        
+
+        <button className="btn btn-primary quiz-start-btn" onClick={() => onStart(level, count, sections)}>
+          Başla →
+        </button>
       </div>
 
       {history.length > 0 && (
