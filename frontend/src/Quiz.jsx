@@ -81,7 +81,7 @@ function Quiz({ level, listId, listName, themeId, themeName, sections, count, on
   }, [finished, questions])
 
   const question = questions?.[index]
-  const correctCount = index - mistakes.length + (flash && flash.correct ? 1 : 0)
+  const correctCount = answers.filter(a => a.correct).length
 
   async function handleAnswer(isCorrect, extra = {}) {
     const response = await apiFetch('/api/Quiz/answer', {

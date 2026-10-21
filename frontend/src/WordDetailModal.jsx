@@ -10,6 +10,7 @@ import { createPortal } from 'react-dom'
 import { apiFetch } from './api'
 import { posTr } from './labels'
 import { speak as speakText } from './preferences'
+import { cleanMeanings } from './meaning'
 
 // word: listeden gelen kelime (wordId, headword, partOfSpeech, level), onClose: kapat
 function WordDetailModal({ word, onClose }) {
@@ -105,7 +106,7 @@ function WordDetailModal({ word, onClose }) {
               ) : (
                 <>
                   <p className="tr-meaning">
-                    {details.turkishMeaning || '—'}
+                    {(details.isCustomMeaning ? details.turkishMeaning : cleanMeanings(details.turkishMeaning)) || '—'}
                     {details.isCustomMeaning && <span className="custom-tag">senin</span>}
                   </p>
                   <button
