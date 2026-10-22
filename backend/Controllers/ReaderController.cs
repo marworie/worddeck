@@ -63,6 +63,14 @@ namespace WordDeck.Controllers
             return Ok(result);
         }
 
+        // POST api/Reader/study/123
+        [HttpPost("study/{wordId:int}")]
+        public async Task<IActionResult> AddToStudy(int wordId)
+        {
+            await _reader.AddToStudyAsync(GetUserId(), wordId, AppClock.Today);
+            return NoContent();
+        }
+
         // Kelime kartlarıyla aynı mantık: Box ≥ 2 biliyor, Box ≥ 6 öğrendi
         private static string StatusOf(int? box) =>
             box == null ? "new"

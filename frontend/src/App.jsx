@@ -22,6 +22,8 @@ import { useToast } from './ToastContext'
 import Stats from './Stats'
 import PlacementTest from './PlacementTest'
 import Themes from './Themes'
+import Library from './Library'
+import Reader from './Reader'
 
 
 function App() {
@@ -32,6 +34,7 @@ function App() {
   const [practiceLevel, setPracticeLevel] = useState(null)
   const [quizConfig, setQuizConfig] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [storyId, setStoryId] = useState(null)
 
   // Sayfa değiştir: aramadan çıkınca kutuyu temizle, sayfanın başına dön
   function navigate(next) {
@@ -145,6 +148,10 @@ function App() {
           {view === 'phonetics' && <PhoneticGuide onBack={goHome} />}
           {view === 'settings' && <Settings onBack={goHome} />}
           {view === 'placement' && <PlacementTest onExit={goHome} onStartLevel={startStudy} />}
+          {view === 'library' && (
+            <Library onOpen={id => { setStoryId(id); navigate('reader') }} />
+          )}
+          {view === 'reader' && <Reader storyId={storyId} onExit={() => navigate('library')} />}
         </main>
       </div>
     </div>

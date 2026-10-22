@@ -13,8 +13,7 @@ import { speak as speakText } from './preferences'
 import { cleanMeanings } from './meaning'
 
 // word: listeden gelen kelime (wordId, headword, partOfSpeech, level), onClose: kapat
-function WordDetailModal({ word, onClose }) {
-  // Şu an gösterilen kelime: aile üyesine tıklanınca değişir
+function WordDetailModal({ word, onClose, extra }) {  // Şu an gösterilen kelime: aile üyesine tıklanınca değişir
   const [current, setCurrent] = useState(word)
   const [details, setDetails] = useState(null)
   const [network, setNetwork] = useState(null)
@@ -83,6 +82,8 @@ function WordDetailModal({ word, onClose }) {
           <span className="level-badge">{current.level}</span> {posTr(current.partOfSpeech)}
           {details?.phonetic && <span className="flashcard-phonetic small"> {details.phonetic}</span>}
         </p>
+
+        {extra && <div className="modal-extra">{extra}</div>}
 
         {/* Anlam, tanım, örnek */}
         {!details ? (

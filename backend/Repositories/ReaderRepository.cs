@@ -5,6 +5,7 @@ namespace WordDeck.Repositories
     public interface IReaderRepository
     {
         Task<IEnumerable<ReaderWordRow>> FindHeadwordsAsync(int userId, IEnumerable<string> headwords);
+        Task AddToStudyAsync(int userId, int wordId, DateTime today);
     }
 
     public class ReaderRepository : BaseRepository, IReaderRepository
@@ -28,5 +29,14 @@ namespace WordDeck.Repositories
                   SELECT WordId, Headword, PartOfSpeech, Level, TurkishMeaning, Box
                   FROM c WHERE rn = 1",
                 new { UserId = userId, Heads = string.Join(',', headwords) });
+
+        // Kelimeyi çalışmaya ekler (zaten varsa dokunmaz)
+        public Task AddToStudyAsync(int userId, int wordId, DateTime today) =>
+            ExecuteAsync(
+                @"INSERT INTO UserWords (UserId, WordId, Box, NextReviewDate)
+                  SELECT @UserId, @WordId, 1, @Today
+                  WHERE EXISTS (SELECT 1 FROM Words WHERE Id = @WordId)
+                    AND NOT EXISTS (SELECT 1 FROM UserWords WHERE UserId = @UserId AND WordId = @WordId)",
+                new { UserId = userId, WordId = wordId, Today = today });
     }
 }
