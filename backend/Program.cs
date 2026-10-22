@@ -82,6 +82,7 @@ builder.Services.AddScoped<IPlacementRepository, PlacementRepository>();
 builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
 builder.Services.AddScoped<IHomeRepository, HomeRepository>();
 builder.Services.AddScoped<IApiUsageRepository, ApiUsageRepository>();
+builder.Services.AddScoped<IReaderRepository, ReaderRepository>();
 
 var app = builder.Build();
 
