@@ -1995,9 +1995,6 @@ button {
 /* Metindeki kelimeler */
 .rw { cursor: pointer; border-radius: 3px; transition: background 0.15s; }
 .rw:hover { background: rgba(250, 204, 21, 0.5); }
-.rw-new { border-bottom: 1px dotted #94a3b8; }
-.rw-studying { background: rgba(250, 204, 21, 0.25); }
-.rw-learned { border-bottom: 2px solid rgba(34, 197, 94, 0.35); }
 
 /* Kelime baloncuğu */
 .word-tip {
@@ -2039,3 +2036,43 @@ button {
 }
 
 .modal-extra { margin: 4px 0 12px; }
+
+.reader-actions { display: flex; align-items: center; gap: 10px; }
+.rate-select {
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+}
+/* Sesli okumada okunan kelime */
+.rw-speaking { background: #93c5fd !important; border-radius: 3px; box-shadow: 0 0 0 2px #93c5fd; }
+
+/* Kelime durum renkleri (değerler okuyucudaki seçimden gelir) */
+.rw-new { background: var(--c-new); }
+.rw-studying { background: var(--c-studying); }
+.rw-known { background: var(--c-known); }
+.rw-learned { background: var(--c-learned); }
+.rw:hover { box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.15); }
+
+.reader-legend { display: flex; gap: 14px; font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+.legend-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
+
+/* Renk paneli */
+.palette-wrap { position: relative; }
+.color-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 40;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+.color-row { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.color-sample { padding: 1px 6px; border-radius: 4px; font-family: Georgia, serif; border: 1px solid var(--border); }
+.color-label { flex: 1; font-size: 0.9rem; }
+.color-row input[type="color"] { width: 32px; height: 26px; padding: 0; border: none; background: none; cursor: pointer; }

@@ -33,3 +33,46 @@ export function uniqueWords(pages) {
   }
   return [...set]
 }
+
+// İngilizce ses: önce bilgisayardaki yerel ses (kelime vurgulama onunla daha güvenilir)
+export function pickEnglishVoice() {
+  const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'))
+  return voices.find(v => v.localService && v.lang === 'en-US')
+    || voices.find(v => v.localService)
+    || voices[0]
+    || null
+}
+
+// Kelime durumlarının renkleri (kullanıcı değiştirebilir, tarayıcıda saklanır)
+export const STATUS_LABELS = {
+  new: 'Hiç bilmediklerin',
+  studying: 'Tekrar edeceklerin',
+  known: 'Bildiklerin',
+  learned: 'Öğrendiklerin'
+}
+
+export const DEFAULT_COLORS = {
+  new: { on: true, color: '#ef4444' },
+  studying: { on: true, color: '#facc15' },
+  known: { on: false, color: '#22c55e' },
+  learned: { on: false, color: '#3b82f6' }
+}
+
+const COLORS_KEY = 'readerColors'
+
+export function loadColors() {
+  try {
+    return { ...DEFAULT_COLORS, ...JSON.parse(localStorage.getItem(COLORS_KEY) || '{}') }
+  } catch {
+    return DEFAULT_COLORS
+  }
+}
+
+export function saveColors(colors) {
+  try { localStorage.setItem(COLORS_KEY, JSON.stringify(colors)) } catch { /* gizli sekme vs. */ }
+}
+
+// Arka plan için rengin yarı saydam hali (#ef4444 → #ef444455)
+export function softColor(entry) {
+  return entry.on ? `${entry.color}55` : 'transparent'
+}
