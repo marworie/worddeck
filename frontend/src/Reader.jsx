@@ -3,13 +3,15 @@
 // Hikaye okuyucu: kitap görünümü, sayfa çevirme (ok, tuş, sürükleme),
 // kelimenin üzerine gelince anlam, tıklayınca kelime detayı,
 // kelime durumlarına göre renkler (kullanıcı seçer),
-// sesli okuma (okunan kelime vurgulanır, sayfa kendiliğinden çevrilir).
+// sesli okuma (okunan kelime vurgulanır, sayfa kendiliğinden çevrilir),
+// okuma kontrolü (kullanıcı okur, doğru/atlanan kelimeler işaretlenir).
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { apiFetch } from './api'
 import {
-  DEFAULT_COLORS, STATUS_LABELS, loadColors, pickEnglishVoice, saveColors, softColor, tokenize, uniqueWords
+  DEFAULT_COLORS, STATUS_LABELS, alignReading, loadColors, normalizeWord, pickEnglishVoice,
+  saveColors, softColor, speakWord, tokenize, uniqueWords
 } from './readerText'
 import { useToast } from './ToastContext'
 import WordDetailModal from './WordDetailModal'
@@ -18,9 +20,11 @@ const STATUS_TEXT = { new: 'Hiç bilmiyorsun', studying: 'Tekrar etmen gerek', k
 const DRAG_DISTANCE = 60   // bu kadar piksel sürüklenince sayfa çevrilir
 const TURN_MS = 600        // sayfa çevirme animasyonu
 const canSpeak = 'speechSynthesis' in window
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition   // sadece Chrome / Edge
 
-// Bir sayfanın metni: tanınan kelimeler etkileşimli, okunan kelime vurgulu
-function PageText({ text, words, active, onHover, onLeave, onPick }) {
+// Bir sayfanın metni: tanınan kelimeler etkileşimli, okunan kelime vurgulu,
+// okuma kontrolünde doğru / atlanan kelimeler işaretli
+function PageText({ text, pageIndex, words, active, marks, onHover, onLeave, onPick }) {
   return text.split('\n\n').map((para, i) => {
     let offset = 0   // kelimenin paragraf içindeki yeri (sesli okumadaki charIndex ile eşleşir)
     return (
@@ -29,13 +33,15 @@ function PageText({ text, words, active, onHover, onLeave, onPick }) {
           const start = offset
           offset += t.text.length
           const reading = active && active.para === i && active.char === start
+          const mark = marks.get(`${pageIndex}-${i}-${j}`)
+          const extra = `${reading ? 'rw-speaking' : ''} ${mark ? `rd-${mark}` : ''}`
           const info = t.word ? words.get(t.key) : null
 
-          if (!info) return <span key={j} className={reading ? 'rw-speaking' : undefined}>{t.text}</span>
+          if (!info) return <span key={j} className={extra.trim() || undefined}>{t.text}</span>
           return (
             <span
               key={j}
-              className={`rw rw-${info.status} ${reading ? 'rw-speaking' : ''}`}
+              className={`rw rw-${info.status} ${extra}`}
               onMouseEnter={e => onHover(info, t.text, e.currentTarget)}
               onMouseLeave={onLeave}
               onClick={() => onPick(info)}
@@ -61,6 +67,9 @@ function Reader({ storyId, onExit }) {
   const [showPalette, setShowPalette] = useState(false)
   const [speaking, setSpeaking] = useState(null) // { page, para, char }: okunan yer
   const [rate, setRate] = useState(0.9)
+  const [checking, setChecking] = useState(false) // mikrofon açık mı
+  const [heard, setHeard] = useState('')          // kullanıcının okuduğu (tanınan) metin
+  const [checkDone, setCheckDone] = useState(false)
   const [wide] = useState(() => window.matchMedia('(min-width: 900px)').matches)
   const dragStart = useRef(null)
   const speakingRef = useRef(false)              // sesli okuma sürüyor mu (geri çağrılarda güncel değer)
@@ -69,6 +78,9 @@ function Reader({ storyId, onExit }) {
   const rateRef = useRef(0.9)                    // geri çağrılarda güncel hız
   const genRef = useRef(0)                       // her okuma başlangıcının numarası; eski okumanın olayları yok sayılır
   const lastPos = useRef(null)                   // en son okunan kelime: { page, para, char }
+  const recRef = useRef(null)                    // ses tanıma nesnesi
+  const checkingRef = useRef(false)
+  const finalRef = useRef('')                    // kesinleşmiş tanınan metin
   const perView = wide ? 2 : 1
 
   // Hikayedeki kelimelerin anlamı ve durumu
@@ -96,12 +108,23 @@ function Reader({ storyId, onExit }) {
     setSpeaking(null)
   }, [])
 
-  // Sayfadan çıkınca okuma dursun
+  // Sayfadan çıkınca okuma ve mikrofon dursun
   useEffect(() => () => {
     genRef.current++
     speakingRef.current = false
+    checkingRef.current = false
+    recRef.current?.abort()
     if (canSpeak) window.speechSynthesis.cancel()
   }, [])
+
+  // Sayfa değişince okuma kontrolü sıfırlanır (yeni sayfayı baştan okursun)
+  useEffect(() => {
+    checkingRef.current = false
+    recRef.current?.abort()
+    setChecking(false)
+    setHeard('')
+    setCheckDone(false)
+  }, [index])
 
   // auto: sesli okuma kendisi çeviriyorsa okuma durmasın
   const turn = useCallback((dir, auto = false) => {
@@ -139,6 +162,8 @@ function Reader({ storyId, onExit }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [turn, selected])
 
+  // ---------- Sesli okuma ----------
+
   // Paragrafı (istenirse ortasındaki bir kelimeden) oku, bitince sonrakine geç
   function speakFrom(page, para, startChar = 0) {
     if (!speakingRef.current) return
@@ -171,6 +196,7 @@ function Reader({ storyId, onExit }) {
 
   // Verilen yerden okumaya başla (eski okuma iptal)
   function play(pos) {
+    stopChecking()
     genRef.current++
     window.speechSynthesis.cancel()
     speakingRef.current = true
@@ -190,6 +216,58 @@ function Reader({ storyId, onExit }) {
     setRate(value)
     if (speakingRef.current && lastPos.current) play(lastPos.current)   // yeni hızla aynı kelimeden
   }
+
+  // ---------- Okuma kontrolü ----------
+
+  // Chrome birkaç saniye sessizlikte tanımayı kapatıyor; okuma sürüyorsa yeniden başlatılır
+  function listen() {
+    const rec = new SpeechRec()
+    rec.lang = 'en-US'
+    rec.continuous = true
+    rec.interimResults = true
+    rec.onresult = e => {
+      let interim = ''
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const text = e.results[i][0].transcript
+        if (e.results[i].isFinal) finalRef.current += ' ' + text
+        else interim += ' ' + text
+      }
+      setHeard(finalRef.current + ' ' + interim)
+    }
+    rec.onerror = e => {
+      if (e.error === 'not-allowed') {
+        showToast('Mikrofon izni verilmedi.', 'error')
+        stopChecking()
+      }
+    }
+    rec.onend = () => { if (checkingRef.current) listen() }
+    recRef.current = rec
+    rec.start()
+  }
+
+  function startChecking() {
+    stopSpeaking()
+    finalRef.current = ''
+    setHeard('')
+    setCheckDone(false)
+    checkingRef.current = true
+    setChecking(true)
+    listen()
+  }
+
+  function stopChecking() {
+    if (!checkingRef.current) return
+    checkingRef.current = false
+    recRef.current?.stop()
+    setChecking(false)
+  }
+
+  function finishChecking() {
+    stopChecking()
+    setCheckDone(true)
+  }
+
+  // ---------- Diğer ----------
 
   // Fareyle / parmakla sürükleyerek çevirme
   function onPointerDown(e) { dragStart.current = e.clientX }
@@ -238,6 +316,20 @@ function Reader({ storyId, onExit }) {
   for (const w of words.values()) counts[w.status]++
   const colorVars = Object.fromEntries(Object.keys(colors).map(k => [`--c-${k}`, softColor(colors[k])]))
 
+  // Okuma kontrolü: ekrandaki kelimeler sırayla, okunanlarla eşleştirilir
+  const expected = []
+  visible.forEach((text, vi) =>
+    text.split('\n\n').forEach((para, i) =>
+      tokenize(para).forEach((t, j) => {
+        if (t.word) expected.push({ id: `${index + vi}-${i}-${j}`, key: t.key, text: t.text })
+      })))
+  const heardWords = heard.split(/\s+/).map(normalizeWord).filter(Boolean)
+  const { states, pos } = alignReading(expected.map(e => e.key), heardWords)
+  const marks = new Map(expected.map((e, i) => [e.id, states[i]]).filter(([, s]) => s))
+  const okCount = states.filter(s => s === 'ok').length
+  const missedWords = [...new Set(expected.filter((e, i) => states[i] === 'missed').map(e => e.key))]
+  const score = pos > 0 ? Math.round((okCount / pos) * 100) : 0
+
   return (
     <div className="reader" style={{ '--book': story.color, ...colorVars }}>
       <div className="reader-head">
@@ -269,6 +361,9 @@ function Reader({ storyId, onExit }) {
               <option value={1.1}>Hızlı</option>
             </select>
           )}
+          {SpeechRec && (checking
+            ? <button className="btn btn-danger" onClick={finishChecking}>⏹ Bitir</button>
+            : <button className="btn btn-ghost" onClick={startChecking}>🎤 Ben okuyayım</button>)}
 
           <div className="palette-wrap">
             <button className="btn btn-ghost" onClick={() => setShowPalette(p => !p)}>🎨 Renkler</button>
@@ -289,6 +384,30 @@ function Reader({ storyId, onExit }) {
         </div>
       </div>
 
+      {/* Okuma kontrolü: canlı durum ya da sonuç */}
+      {checking && (
+        <div className="read-live">
+          <span className="rec-dot" /> Dinliyorum... Sayfayı sesli oku · {pos} / {expected.length} kelime
+        </div>
+      )}
+      {checkDone && pos > 0 && (
+        <div className="read-result panel">
+          <div className="read-score">
+            <b>🎤 %{score} doğru</b>
+            <span className="muted small"> {okCount} kelime doğru · {pos - okCount} kelime atlandı ya da anlaşılmadı</span>
+          </div>
+          {missedWords.length > 0 && (
+            <div className="chip-list">
+              <span className="muted small">Dinle ve tekrar dene:</span>
+              {missedWords.map(w => (
+                <button key={w} className="chip" onClick={() => speakWord(w)}>🔊 {w}</button>
+              ))}
+            </div>
+          )}
+          <button className="btn btn-ghost small" onClick={() => { setHeard(''); setCheckDone(false) }}>Kapat</button>
+        </div>
+      )}
+
       <div className="reader-stage">
         <button className="page-arrow" onClick={() => turn(-1)} disabled={index === 0} aria-label="Önceki sayfa">‹</button>
 
@@ -301,8 +420,10 @@ function Reader({ storyId, onExit }) {
             <article key={index + i} className="book-page">
               <PageText
                 text={text}
+                pageIndex={index + i}
                 words={words}
                 active={speaking && speaking.page === index + i ? speaking : null}
+                marks={marks}
                 onHover={showTip}
                 onLeave={() => setTip(null)}
                 onPick={info => { setTip(null); setSelected(info) }}

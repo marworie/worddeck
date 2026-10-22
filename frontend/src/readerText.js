@@ -76,3 +76,39 @@ export function saveColors(colors) {
 export function softColor(entry) {
   return entry.on ? `${entry.color}55` : 'transparent'
 }
+
+// İki kelime aynı mı (çoğul -s farkını tolere et: walk / walks)
+function sameWord(a, b) {
+  return a === b || a.replace(/s$/, '') === b.replace(/s$/, '')
+}
+
+// Okunan kelimeleri sayfadaki kelimelerle sırayla eşleştirir.
+// Eşleşmeyen kelimede `lookahead` kadar ileri bakılır; bulunursa aradakiler "missed" olur.
+// Sonuç: her beklenen kelime için 'ok' | 'missed' | null (henüz okunmadı)
+export function alignReading(expected, heard, lookahead = 5) {
+  const states = new Array(expected.length).fill(null)
+  let pos = 0
+  for (const h of heard) {
+    const end = Math.min(pos + lookahead, expected.length)
+    for (let k = pos; k < end; k++) {
+      if (sameWord(expected[k], h)) {
+        for (let m = pos; m < k; m++) states[m] = 'missed'
+        states[k] = 'ok'
+        pos = k + 1
+        break
+      }
+    }
+  }
+  return { states, pos }
+}
+
+// Tek kelimeyi seslendir (zorlanılan kelimeleri dinlemek için)
+export function speakWord(word) {
+  const u = new SpeechSynthesisUtterance(word)
+  u.lang = 'en-US'
+  u.rate = 0.8
+  const voice = pickEnglishVoice()
+  if (voice) u.voice = voice
+  window.speechSynthesis.cancel()
+  window.speechSynthesis.speak(u)
+}
