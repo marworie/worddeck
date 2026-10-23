@@ -366,7 +366,7 @@ function Reader({ storyId, onExit }) {
             : <button className="btn btn-ghost" onClick={startChecking}>🎤 Ben okuyayım</button>)}
 
           <div className="palette-wrap">
-            <button className="btn btn-ghost" onClick={() => setShowPalette(p => !p)}>🎨 Renkler</button>
+            <button className="btn btn-ghost" onClick={() => setShowPalette(p => !p)}>🎨 <span className="palette-label">Renkler</span></button>
             {showPalette && (
               <div className="color-panel panel" data-lenis-prevent>
                 {Object.keys(STATUS_LABELS).map(k => (
@@ -445,9 +445,9 @@ function Reader({ storyId, onExit }) {
       </div>
 
       <div className="reader-foot">
-        <span className="muted small">
+          <span className="muted small">
           Sayfa {index + 1}{visible.length > 1 ? `–${lastVisible}` : ''} / {story.pages.length}
-          {' · '}← → tuşları ya da sürükleyerek çevir
+          <span className="desktop-hint"> · ← → tuşları ya da sürükleyerek çevir</span>
         </span>
         <div className="reader-progress"><span style={{ width: `${(lastVisible / story.pages.length) * 100}%` }} /></div>
       </div>
