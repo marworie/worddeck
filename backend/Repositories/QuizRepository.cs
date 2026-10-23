@@ -10,6 +10,7 @@ namespace WordDeck.Repositories
         Task<int> SaveResultAsync(int userId, QuizFinishDto dto);
         Task<IEnumerable<QuizResultDto>> GetHistoryAsync(int userId, int top);
         Task<IEnumerable<PracticeQuestionDto>> GetListQuizWordsAsync(int userId, int listId, int count);
+        Task<IEnumerable<PracticeQuestionDto>> GetWordsByIdsAsync(int userId, IEnumerable<int> ids);
     }
 
     public class QuizRepository : BaseRepository, IQuizRepository
@@ -78,5 +79,18 @@ namespace WordDeck.Repositories
                   WHERE li.ListId = @ListId
                   ORDER BY NEWID()",
                 new { UserId = userId, ListId = listId, Count = count });
+        
+        // Belirli kelimelerden sınav (öğrenme yolu ünitesi)
+        public Task<IEnumerable<PracticeQuestionDto>> GetWordsByIdsAsync(int userId, IEnumerable<int> ids) =>
+            QueryAsync<PracticeQuestionDto>(
+                @"SELECT w.Id AS WordId, w.Headword, w.PartOfSpeech, w.Level,
+                         COALESCE(uw.CustomMeaning, w.TurkishMeaning) AS TurkishMeaning,
+                         w.Definition, w.DefinitionTr, w.Example,
+                         CAST(ISNULL(uw.HardState, 0) AS INT) AS HardState,
+                         CAST(ISNULL(uw.HardStreak, 0) AS INT) AS HardStreak
+                  FROM Words w
+                  LEFT JOIN UserWords uw ON uw.WordId = w.Id AND uw.UserId = @UserId
+                  WHERE w.Id IN @Ids",
+                new { UserId = userId, Ids = ids.ToList() });
     }
 }

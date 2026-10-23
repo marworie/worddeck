@@ -3,6 +3,7 @@
 // Sınav ekranı: karışık tipte sorular, süre ve skor.
 // Cevaptan sonra kısa bir ✅/❌ gösterilip otomatik olarak sonraki soruya geçilir.
 // Sonunda skor ve yanlışlar listelenir; yanlışlar backend'de Zorlandıklarım'a eklenir.
+// Öğrenme yolu ünite testi ise puan yola kaydedilir, %80'i geçince sıradaki ünite açılır.
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react'
@@ -37,7 +38,8 @@ function formatTime(seconds) {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-function Quiz({ level, listId, listName, themeId, themeName, sections, count, onExit }) {
+// pathUnit: { level, themeId, part, name } → öğrenme yolu ünite testi
+function Quiz({ level, listId, listName, themeId, themeName, wordIds, pathUnit, sections, count, onExit }) {
   const { supported: micSupported } = useSpeechRecognition()
   const [questions, setQuestions] = useState(null)
   const [index, setIndex] = useState(0)
@@ -47,31 +49,35 @@ function Quiz({ level, listId, listName, themeId, themeName, sections, count, on
   const [finished, setFinished] = useState(false)
   const [answers, setAnswers] = useState([])          // { section, correct }: bölüm bazlı sonuç için
   const [showIntro, setShowIntro] = useState(true)    // bölüm giriş ekranı
+  const [pathResult, setPathResult] = useState(null)  // ünite testinin sonucu (geçti mi, kilit açıldı mı)
   const startTime = useRef(0)
-  
+
   // Bağımlılıkta dizi yerine metin kullan: her render'da yeni dizi gelirse effect boşuna çalışmasın
   const sectionsParam = sections && sections.length < 4 ? sections.join(',') : ''
+  const wordIdsParam = wordIds?.join(',') ?? ''
   // Başlangıç zamanını render'da değil, sınav ekrana gelince bir kez al
   useEffect(() => { startTime.current = Date.now() }, [])
   const ready = useQuestionDetails(questions, setQuestions, index)
 
   // Soruları yükle; mikrofon yoksa "söyle" sorularını "yaz"a çevir
   useEffect(() => {
-    const source = listId
-      ? `listId=${listId}`
-      : themeId
-        ? `themeId=${themeId}${level ? `&level=${level}` : ''}`
-        : `level=${level}`
-      apiFetch(`/api/Quiz?${source}&count=${count}${sectionsParam ? `&sections=${sectionsParam}` : ''}`)
+    const source = wordIdsParam
+      ? `wordIds=${wordIdsParam}`
+      : listId
+        ? `listId=${listId}`
+        : themeId
+          ? `themeId=${themeId}${level ? `&level=${level}` : ''}`
+          : `level=${level}`
+    apiFetch(`/api/Quiz?${source}&count=${count}${sectionsParam ? `&sections=${sectionsParam}` : ''}`)
       .then(r => (r.ok ? r.json() : []))
       .then(data => {
-          setQuestions(data.map(q =>
+        setQuestions(data.map(q =>
           q.questionType === 'speaking' && !micSupported
             ? { ...q, questionType: 'typing', section: q.section === 'speaking' ? 'writing' : q.section }
             : q))
         startTime.current = Date.now()   // süre sorular gelince başlasın
       })
-    }, [level, listId, themeId, sectionsParam, count, micSupported])
+  }, [level, listId, themeId, wordIdsParam, sectionsParam, count, micSupported])
 
   // Süre sayacı
   useEffect(() => {
@@ -111,13 +117,25 @@ function Quiz({ level, listId, listName, themeId, themeName, sections, count, on
     setFinished(true)
     const duration = Math.floor((Date.now() - startTime.current) / 1000)
     setElapsed(duration)
-    if (listId || themeId) return   // liste ve tema sınavları geçmişe kaydedilmiyor (geçmiş seviye bazlı)
+    const correct = questions.length - mistakes.length
+
+    // Ünite testi: puan öğrenme yoluna kaydedilir
+    if (pathUnit) {
+      const response = await apiFetch(
+        `/api/Path/${pathUnit.level}/unit/${pathUnit.themeId}/${pathUnit.part}/result`,
+        { method: 'POST', body: JSON.stringify({ correct, total: questions.length }) }
+      )
+      if (response.ok) setPathResult(await response.json())
+      return
+    }
+
+    if (listId || themeId || wordIdsParam) return   // liste ve tema sınavları geçmişe kaydedilmiyor (geçmiş seviye bazlı)
     await apiFetch('/api/Quiz/finish', {
       method: 'POST',
       body: JSON.stringify({
         level,
         totalQuestions: questions.length,
-        correctAnswers: questions.length - mistakes.length,
+        correctAnswers: correct,
         durationSeconds: duration
       })
     })
@@ -141,6 +159,8 @@ function Quiz({ level, listId, listName, themeId, themeName, sections, count, on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flash])
 
+  const exitLabel = pathUnit ? 'Yola dön' : 'Ana sayfaya dön'
+
   // ===== Yükleniyor / boş =====
   if (!questions) return <p className="loading-text">Sınav hazırlanıyor...</p>
 
@@ -148,8 +168,13 @@ function Quiz({ level, listId, listName, themeId, themeName, sections, count, on
     return (
       <div className="panel session-end">
         <h2>Henüz sınav olamazsın</h2>
-        <p>{listId ? `"${listName}" listesinde` : themeId ? `"${themeName}" temasında` : `${level} seviyesinde`} henüz soru çıkacak kelime yok.</p>      
-        <button className="btn btn-primary" onClick={onExit}>Ana sayfaya dön</button>
+        <p>
+          {pathUnit ? `"${pathUnit.name}" ünitesinde`
+            : listId ? `"${listName}" listesinde`
+            : themeId ? `"${themeName}" temasında`
+            : `${level} seviyesinde`} henüz soru çıkacak kelime yok.
+        </p>
+        <button className="btn btn-primary" onClick={onExit}>{exitLabel}</button>
       </div>
     )
   }
@@ -164,6 +189,20 @@ function Quiz({ level, listId, listName, themeId, themeName, sections, count, on
         <h2>{pct >= 80 ? 'Harika!' : pct >= 50 ? 'İyi gidiyorsun' : 'Biraz daha çalışmalı'}</h2>
         <p className="session-score">{correct} / {total} · %{pct}</p>
         <p className="muted">Süre: {formatTime(elapsed)}</p>
+
+        {/* Ünite testi sonucu */}
+        {pathResult && (
+          <div className={`path-result ${pathResult.passed ? 'ok' : 'fail'}`}>
+            {pathResult.passed ? (
+              <>
+                🎉 <b>{pathUnit.name}</b> ünitesini geçtin!
+                {pathResult.nextUnlocked && <> 🔓 Sıradaki ünitenin kilidi açıldı.</>}
+              </>
+            ) : (
+              <>Bu üniteyi geçmek için en az <b>%80</b> gerekiyor. Kelimelere bir daha göz atıp tekrar dene 💪</>
+            )}
+          </div>
+        )}
 
         {/* Bölüm bazlı sonuç */}
         <div className="quiz-sections">
@@ -194,7 +233,7 @@ function Quiz({ level, listId, listName, themeId, themeName, sections, count, on
           </div>
         )}
 
-        <button className="btn btn-primary" onClick={onExit}>Ana sayfaya dön</button>
+        <button className="btn btn-primary" onClick={onExit}>{exitLabel}</button>
       </div>
     )
   }
@@ -207,6 +246,7 @@ function Quiz({ level, listId, listName, themeId, themeName, sections, count, on
     return (
       <div className="session">
         <div className="panel quiz-section-intro">
+          {pathUnit && <p className="muted small">📝 {pathUnit.name} · ünite testi</p>}
           <span className="quiz-section-icon big">{info.icon}</span>
           <p className="muted">Bölüm {sectionList.indexOf(question.section) + 1} / {sectionList.length}</p>
           <h2>{info.title}</h2>

@@ -34,7 +34,7 @@ namespace WordDeck.Controllers
         // GET api/Quiz?level=B1 | ?listId=3 | ?themeId=2 (&level=B1)   &count=10   &sections=reading,listening
         [HttpGet]
         public async Task<IActionResult> GetQuestions([FromQuery] string? level, [FromQuery] int? listId,
-            [FromQuery] int? themeId, [FromQuery] string? sections, [FromQuery] int count = 10)
+            [FromQuery] int? themeId, [FromQuery] string? sections, [FromQuery] string? wordIds, [FromQuery] int count = 10)
         {
             int userId = GetUserId();
             count = Math.Clamp(count, 5, 50);
@@ -52,7 +52,20 @@ namespace WordDeck.Controllers
             int fetchCount = chosen.Count is > 0 and < 4 ? count * 2 : count;
 
             IEnumerable<PracticeQuestionDto> words;
-            if (listId.HasValue)
+            // Belirli kelimeler (öğrenme yolu): "12,45,78"
+            var ids = (wordIds ?? "")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => int.TryParse(s, out var id) ? id : 0)
+                .Where(id => id > 0)
+                .Distinct()
+                .Take(50)
+                .ToList();
+
+            if (ids.Count > 0)
+            {
+                words = (await _quiz.GetWordsByIdsAsync(userId, ids)).OrderBy(_ => Random.Shared.Next());
+            }
+            else if (listId.HasValue)
             {
                 // Başkasının listesinden sınav olunamasın
                 if (await _lists.GetListAsync(userId, listId.Value) == null)

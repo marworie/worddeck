@@ -25,6 +25,7 @@ import Themes from './Themes'
 import Library from './Library'
 import Reader from './Reader'
 import SentencePractice from './SentencePractice'
+import LearningPath from './LearningPath'
 
 function App() {
   const showToast = useToast()
@@ -139,7 +140,14 @@ function App() {
               themeName={quizConfig.themeName}
               sections={quizConfig.sections}
               count={quizConfig.count}
-              onExit={() => navigate(quizConfig.listId ? 'notebook' : quizConfig.themeId ? 'themes' : 'quizSetup')}
+              wordIds={quizConfig.wordIds}
+              pathUnit={quizConfig.pathUnit}
+              onExit={() => navigate(
+                quizConfig.pathUnit ? 'path'
+                  : quizConfig.listId ? 'notebook'
+                  : quizConfig.themeId ? 'themes'
+                  : 'quizSetup'
+              )}
             />
           )}
           {view === 'search' && <Search query={searchQuery} onQueryChange={handleSearchInput} onNavigate={navigate} />}
@@ -153,6 +161,20 @@ function App() {
           )}
           {view === 'reader' && <Reader storyId={storyId} onExit={() => navigate('library')} />}
           {view === 'sentence' && <SentencePractice onExit={goHome} />}
+          {view === 'path' && (
+            <LearningPath
+              onStartTest={({ level, unit, words }) => startQuiz({
+                wordIds: words.map(w => w.wordId),
+                count: Math.min(10, words.length),
+                pathUnit: {
+                  level,
+                  themeId: unit.themeId,
+                  part: unit.part,
+                  name: unit.partCount > 1 ? `${unit.name} ${unit.part}` : unit.name
+                }
+              })}
+            />
+          )}
         </main>
       </div>
     </div>

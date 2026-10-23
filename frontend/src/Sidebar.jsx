@@ -7,6 +7,7 @@
 const NAV = [
   { view: 'home', icon: 'ti-home', label: 'Ana sayfa', mobile: true },
   { view: 'levels', icon: 'ti-cards', label: 'Kart çalış', short: 'Çalış', mobile: true },
+    { view: 'path', icon: 'ti-route', label: 'Öğrenme yolu' },
   { view: 'hard', icon: 'ti-flame', label: 'Zorlandıklarım', short: 'Zorlar', mobile: true },
   { view: 'quizSetup', icon: 'ti-checklist', label: 'Sınav', mobile: true },
   { view: 'search', icon: 'ti-search', label: 'Kelime ara' },
