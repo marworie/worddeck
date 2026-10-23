@@ -2298,7 +2298,7 @@ button {
   gap: 14px;
   padding: 48px;
   background: linear-gradient(150deg, color-mix(in srgb, var(--primary) 12%, white), color-mix(in srgb, var(--accent) 22%, white));
-  color: var(--text);
+  color: #1f2937;   /* arka plan her temada açık, yazı hep koyu kalsın */
 }
 .auth-lottie { width: min(420px, 90%); }
 .auth-hero h2 { margin: 0; font-size: 1.8rem; color: var(--primary); }

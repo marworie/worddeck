@@ -75,7 +75,6 @@ builder.Services.AddScoped<IHardRepository, HardRepository>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<WordNetworkService>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
-builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 builder.Services.AddHostedService<DictionaryBackfillService>();
 builder.Services.AddHostedService<MeaningBackfillService>();
 builder.Services.AddScoped<IPlacementRepository, PlacementRepository>();
@@ -102,7 +101,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // Canlıda React'in derlenmiş dosyaları wwwroot'tan sunulacak
-app.UseDefaultFiles();
+app.UseDefaultFiles();   // ana adres açılınca wwwroot/index.html gelsin
 app.UseStaticFiles();
 
 app.UseAuthentication();   // önce "kimsin?"

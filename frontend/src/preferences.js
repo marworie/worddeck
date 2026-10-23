@@ -23,7 +23,7 @@ export function setPref(key, value) {
 export function applyTheme() {
   const { theme } = getPrefs()
   const dark = theme === 'dark' ||
-    (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    (theme === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)
   document.documentElement.dataset.theme = dark ? 'dark' : 'light'
 }
 
