@@ -26,8 +26,11 @@ import Library from './Library'
 import Reader from './Reader'
 import SentencePractice from './SentencePractice'
 import LearningPath from './LearningPath'
+import { ReactLenis } from 'lenis/react'
+import 'lenis/dist/lenis.css'
 
 function App() {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches   // Sistem ayarlarında "hareketi azalt" açık olanlara yumuşak kaydırma uygulanmasın
   const showToast = useToast()
   const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('token') !== null)
   const [view, setView] = useState('home')
@@ -90,6 +93,7 @@ function App() {
 
   return (
     <div className="app-shell">
+      {!reduceMotion && <ReactLenis root options={{ lerp: 0.03, smoothWheel: true }} />}
       <Sidebar view={view} onNavigate={navigate} onLogout={handleLogout} />
 
       <div className="app-content">

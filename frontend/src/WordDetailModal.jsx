@@ -66,7 +66,7 @@ function WordDetailModal({ word, onClose, extra }) {  // Şu an gösterilen keli
 
   return createPortal(
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box panel" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-box panel" data-lenis-prevent onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}>✕</button>
 
         {/* Aileden başka bir kelimeye geçildiyse ilk kelimeye dönüş */}

@@ -368,7 +368,7 @@ function Reader({ storyId, onExit }) {
           <div className="palette-wrap">
             <button className="btn btn-ghost" onClick={() => setShowPalette(p => !p)}>🎨 Renkler</button>
             {showPalette && (
-              <div className="color-panel panel">
+              <div className="color-panel panel" data-lenis-prevent>
                 {Object.keys(STATUS_LABELS).map(k => (
                   <label key={k} className="color-row">
                     <input type="checkbox" checked={colors[k].on} onChange={e => updateColor(k, { on: e.target.checked })} />
