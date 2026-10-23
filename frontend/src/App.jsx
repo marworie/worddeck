@@ -26,6 +26,7 @@ import Library from './Library'
 import Reader from './Reader'
 import SentencePractice from './SentencePractice'
 import LearningPath from './LearningPath'
+import LoginIntro from './LoginIntro'
 import { ReactLenis } from 'lenis/react'
 import 'lenis/dist/lenis.css'
 
@@ -39,6 +40,7 @@ function App() {
   const [quizConfig, setQuizConfig] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [storyId, setStoryId] = useState(null)
+  const [showIntro, setShowIntro] = useState(false)
 
   // Sayfa değiştir: aramadan çıkınca kutuyu temizle, sayfanın başına dön
   function navigate(next) {
@@ -86,7 +88,7 @@ function App() {
   }, [showToast])
 
   if (!isLoggedIn) {
-    return <Login onLoginSuccess={() => setIsLoggedIn(true)} />
+    return <Login onLoginSuccess={() => { setIsLoggedIn(true); if (!reduceMotion) setShowIntro(true) }} />
   }
 
   const goHome = () => navigate('home')
@@ -94,6 +96,7 @@ function App() {
   return (
     <div className="app-shell">
       {!reduceMotion && <ReactLenis root options={{ lerp: 0.03, smoothWheel: true }} />}
+      {showIntro && <LoginIntro onDone={() => setShowIntro(false)} />}
       <Sidebar view={view} onNavigate={navigate} onLogout={handleLogout} />
 
       <div className="app-content">
