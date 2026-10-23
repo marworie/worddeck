@@ -2220,3 +2220,35 @@ button {
 .path-result { padding: 12px 16px; border-radius: var(--radius); font-weight: 500; }
 .path-result.ok { background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); }
 .path-result.fail { background: #fef3c7; color: #92400e; }
+
+/* Ana sayfa: devam et kartları */
+.continue-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.continue-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-align: left;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.continue-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); }
+.continue-icon {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 1.8rem;
+  background: var(--hover);
+}
+.continue-icon.path { border-radius: 50%; background: var(--primary); }
+.continue-text { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.continue-text b { display: flex; align-items: center; gap: 6px; }
+.continue-text .theme-progress { margin-top: 4px; }
+.continue-text .theme-progress span { display: block; height: 100%; background: var(--primary); border-radius: inherit; }
+
+@media (max-width: 768px) {
+  .continue-grid { grid-template-columns: 1fr; }
+}

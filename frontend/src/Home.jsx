@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
 import { posTr } from './labels'
 import { speak } from './preferences'
+import ContinueCards from './ContinueCards'
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1']
 
@@ -18,7 +19,7 @@ function highlight(sentence, headword) {
     i % 2 === 1 ? <b key={i}>{part}</b> : <span key={i}>{part}</span>)
 }
 
-function Home({ onStartStudy, onNavigate }) {
+function Home({ onStartStudy, onNavigate, onOpenStory}) {
   const [progress, setProgress] = useState(null)
   const [home, setHome] = useState(null)
   const [details, setDetails] = useState(null)   // günün kelimesinin okunuşu ve örnek çevirisi
@@ -116,6 +117,8 @@ function Home({ onStartStudy, onNavigate }) {
           </section>
         )}
       </div>
+
+      <ContinueCards onOpenStory={onOpenStory} onNavigate={onNavigate} />
 
       {/* 4. Öğrenme yolculuğu */}
       <section className="journey panel">

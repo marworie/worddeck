@@ -45,6 +45,7 @@ namespace WordDeck.Dtos
         public int WordCount { get; set; }
         public int PageCount { get; set; }
         public int? Page { get; set; }            // kaldığı sayfa (hiç açılmadıysa null)
+        public DateTime? LastReadAt { get; set; }   // en son ne zaman okundu
     }
 
     // Okuyucuya giden hikaye

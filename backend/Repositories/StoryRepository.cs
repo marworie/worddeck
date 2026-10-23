@@ -19,7 +19,7 @@ namespace WordDeck.Repositories
         public Task<IEnumerable<StorySummaryDto>> GetAllAsync(int userId) =>
             QueryAsync<StorySummaryDto>(
                 @"SELECT s.Id, s.Title, s.Author, s.Level, s.Emoji, s.Color, s.CoverUrl,
-                         s.WordCount, s.PageCount, p.Page
+                         s.WordCount, s.PageCount, p.Page, p.UpdatedAt AS LastReadAt
                   FROM Stories s
                   LEFT JOIN UserStoryProgress p ON p.StoryId = s.Id AND p.UserId = @UserId
                   ORDER BY CASE s.Level WHEN 'A1' THEN 1 WHEN 'A2' THEN 2 WHEN 'B1' THEN 3

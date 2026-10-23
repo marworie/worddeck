@@ -111,7 +111,13 @@ function App() {
         </header>
 
         <main className="app-main">
-          {view === 'home' && <Home onStartStudy={startStudy} onNavigate={navigate} />}
+          {view === 'home' && (
+            <Home
+              onStartStudy={startStudy}
+              onNavigate={navigate}
+              onOpenStory={id => { setStoryId(id); navigate('reader') }}
+            />
+          )}
           {view === 'levels' && <Levels onStartStudy={startStudy} />}
           {view === 'study' && <StudySession level={studyLevel} onExit={goHome} />}
           {view === 'stats' && <Stats />}
