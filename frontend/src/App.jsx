@@ -24,7 +24,7 @@ import PlacementTest from './PlacementTest'
 import Themes from './Themes'
 import Library from './Library'
 import Reader from './Reader'
-
+import SentencePractice from './SentencePractice'
 
 function App() {
   const showToast = useToast()
@@ -152,6 +152,7 @@ function App() {
             <Library onOpen={id => { setStoryId(id); navigate('reader') }} />
           )}
           {view === 'reader' && <Reader storyId={storyId} onExit={() => navigate('library')} />}
+          {view === 'sentence' && <SentencePractice onExit={goHome} />}
         </main>
       </div>
     </div>

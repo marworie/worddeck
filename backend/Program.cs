@@ -84,6 +84,8 @@ builder.Services.AddScoped<IHomeRepository, HomeRepository>();
 builder.Services.AddScoped<IApiUsageRepository, ApiUsageRepository>();
 builder.Services.AddScoped<IReaderRepository, ReaderRepository>();
 builder.Services.AddScoped<IStoryRepository, StoryRepository>();
+builder.Services.AddScoped<ISentenceRepository, SentenceRepository>();
+builder.Services.AddScoped<LanguageToolService>();
 
 var app = builder.Build();
 

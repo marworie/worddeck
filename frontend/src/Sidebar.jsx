@@ -12,6 +12,7 @@ const NAV = [
   { view: 'search', icon: 'ti-search', label: 'Kelime ara' },
   { view: 'themes', icon: 'ti-category', label: 'Temalar' },
   { view: 'library', icon: 'ti-book', label: 'Okuma' },
+  { view: 'sentence', icon: 'ti-pencil', label: 'Cümle kur' },
   { view: 'notebook', icon: 'ti-notebook', label: 'Defterim', mobile: true },
   { view: 'stats', icon: 'ti-chart-bar', label: 'İstatistikler' },
   { view: 'phonetics', icon: 'ti-language', label: 'Fonetik rehberi' }

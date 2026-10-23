@@ -30,19 +30,23 @@ namespace WordDeck.Services
             return raw[s..e];
         }
 
-        // Başlığa göre keser: başlık satırından sonraki hikaye başlığına kadar.
-        // Başlık içindekiler listesinde de geçer; arada 100 kelimeden az metin varsa
-        // orası liste demektir, başlığın sonraki geçtiği yere bakılır.
         public static string? ExtractByTitle(string raw, string title, string? nextTitle)
         {
-            var lines = raw.Replace("\r\n", "\n").Split('\n');
+            var lines = raw.Replace("\r\n", "\n").Split('\n'); //kitabin tamamini satırlara böl
 
-            for (int i = 0; i < lines.Length; i++)
+            for (int i = 0; i < lines.Length; i++) // satir satir gez
             {
-                if (!SameHeading(lines[i], title)) continue;
+                // "The Red Shoes" başlığı İLK OLARAK içindekiler listesinde bulunuyor (dosyanın başında).
+                // Hikayenin asıl başlığı ise çok aşağıda, ona henüz gelmedik.
+                if (!SameHeading(lines[i], title)) continue; // aradigimiz satir baslik degilse gec
 
-                int end = lines.Length;
+                int end = lines.Length; // hikayenin nerede bittigini bul varsayilan dosyanin sonu
                 for (int j = i + 1; j < lines.Length; j++)
+                    // İki şeyden biri bitiş sayılır:
+                    //   1) Gutenberg'in kitap sonu satırı "*** END OF ..."
+                    //   2) Bir sonraki hikayenin başlığı (nextTitle)
+                    // Red Shoes kitaptaki SON hikaye olduğu için nextTitle = null.
+                    // Yani tek bitiş "*** END OF" satırı, o da kitabın en sonunda.
                     if (lines[j].StartsWith("*** END OF", StringComparison.OrdinalIgnoreCase)
                         || (nextTitle != null && SameHeading(lines[j], nextTitle)))
                     {
@@ -50,12 +54,28 @@ namespace WordDeck.Services
                         break;
                     }
 
+                // Başlıktan sonraki satırdan bitişe kadar olan metni al.
+                // Red Shoes'ta: içindekiler listesindeki başlıktan kitabın sonuna kadar,
+                // yani BÜTÜN KİTAP alınıyor.
                 var text = string.Join("\n", lines[(i + 1)..end]);
+
+                // "Arada en az 100 kelime varsa burası içindekiler değil, gerçek hikayedir" varsayımı.
+                // Diğer hikayelerde işe yarıyor: listede bir alt satırda nextTitle var,
+                // arada metin kalmıyor, bu yer atlanıyor.
+                // AMA Red Shoes'ta arada bütün kitap var (binlerce kelime), kontrol geçiyor
+                // ve yanlış metin döndürülüyor. Asıl başlığa hiç ulaşılmıyor.
+                // SORUN BURADA: 474 sayfa böyle çıkıyor.
                 if (CountWords(text) >= 100) return text;
+
+                // 100 kelimeden azsa burası içindekiler listesiydi,
+                // döngü devam edip başlığın bir sonraki geçtiği yere bakar.
             }
 
+            // Başlık hiç bulunamadı
             return null;
         }
+
+   
 
         // "THE SELFISH GIANT." ile "The Selfish Giant" aynı başlık
         private static bool SameHeading(string line, string title) => HeadingKey(line) == HeadingKey(title);

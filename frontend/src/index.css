@@ -2101,3 +2101,46 @@ button {
 .read-result > .btn { align-self: flex-end; }
 
 .btn-danger { background: #ef4444; color: #fff; border: none; }
+
+/* Cümle kurma */
+.sentence-page { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
+.sentence-top { display: flex; justify-content: space-between; align-items: baseline; }
+.sentence-word { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.sentence-word h3 { margin: 0 0 4px; font-size: 1.6rem; display: flex; align-items: center; gap: 8px; }
+.sentence-word p { margin: 0; }
+
+.sentence-input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 1.1rem;
+  font-family: Georgia, serif;
+  resize: vertical;
+}
+.sentence-input:focus { outline: none; border-color: var(--primary); }
+
+.sentence-result { display: flex; flex-direction: column; gap: 10px; border-left: 4px solid var(--border); }
+.sentence-result.ok { border-left-color: var(--success); }
+.sentence-result.bad { border-left-color: #f59e0b; }
+.sentence-verdict { margin: 0; font-weight: 600; }
+
+.sentence-checks, .sentence-issues { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.sentence-highlight { font-family: Georgia, serif; font-size: 1.1rem; margin: 4px 0; }
+.sentence-error { text-decoration: underline wavy 2px #ef4444; text-underline-offset: 4px; cursor: help; }
+
+.issue-category {
+  display: inline-block;
+  padding: 1px 8px;
+  margin-right: 6px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.issue-fixes { display: inline-flex; gap: 6px; margin-left: 8px; flex-wrap: wrap; }
+
+.sentence-summary { display: flex; flex-direction: column; gap: 6px; padding-left: 18px; }
