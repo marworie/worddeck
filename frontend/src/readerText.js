@@ -112,3 +112,41 @@ export function speakWord(word) {
   window.speechSynthesis.cancel()
   window.speechSynthesis.speak(u)
 }
+
+// Kullanıcının yapıştırdığı metni sayfalara böler (backend'deki Paginate'in aynısı)
+export function paginateText(text, wordsPerPage = 150) {
+  const paragraphs = text
+    .replace(/\r\n/g, '\n')
+    .split(/\n\s*\n/)
+    .map(p => p.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+
+  const pages = []
+  let current = []
+  let count = 0
+
+  for (const p of paragraphs) {
+    const words = p.split(' ').length
+    // Sayfa doluysa yeni sayfaya geç (paragraf bölünmez)
+    if (count > 0 && count + words > wordsPerPage) {
+      pages.push(current.join('\n\n'))
+      current = []
+      count = 0
+    }
+    current.push(p)
+    count += words
+  }
+  if (current.length) pages.push(current.join('\n\n'))
+  return pages
+}
+
+// Kendi metnin: { title, text, page } localStorage'da durur
+const CUSTOM_KEY = 'customText'
+
+export function loadCustomText() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_KEY)) } catch { return null }
+}
+
+export function saveCustomText(data) {
+  try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(data)) } catch { /* kaydedilemezse önemli değil */ }
+}

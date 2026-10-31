@@ -170,7 +170,10 @@ function App() {
           {view === 'settings' && <Settings onBack={goHome} />}
           {view === 'placement' && <PlacementTest onExit={goHome} onStartLevel={startStudy} />}
           {view === 'library' && (
-            <Library onOpen={id => { setStoryId(id); navigate('reader') }} />
+            <Library
+              onOpen={id => { setStoryId(id); navigate('reader') }}
+              onOpenCustom={() => { setStoryId('custom'); navigate('reader') }}
+            />
           )}
           {view === 'reader' && <Reader storyId={storyId} onExit={() => navigate('library')} />}
           {view === 'sentence' && <SentencePractice onExit={goHome} />}

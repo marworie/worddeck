@@ -10,8 +10,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { apiFetch } from './api'
 import {
-  DEFAULT_COLORS, STATUS_LABELS, alignReading, loadColors, normalizeWord, pickEnglishVoice,
-  saveColors, softColor, speakWord, tokenize, uniqueWords
+  DEFAULT_COLORS, STATUS_LABELS, alignReading, loadColors, loadCustomText, normalizeWord, paginateText,
+  pickEnglishVoice, saveColors, saveCustomText, softColor, speakWord, tokenize, uniqueWords
 } from './readerText'
 import { useToast } from './ToastContext'
 import WordDetailModal from './WordDetailModal'
@@ -21,6 +21,22 @@ const DRAG_DISTANCE = 60   // bu kadar piksel sürüklenince sayfa çevrilir
 const TURN_MS = 600        // sayfa çevirme animasyonu
 const canSpeak = 'speechSynthesis' in window
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition   // sadece Chrome / Edge
+
+// Kendi metnini, API'den gelen hikayeyle aynı şekle sokar
+function customStory() {
+  const c = loadCustomText()
+  if (!c) return null
+  return {
+    id: 'custom',
+    title: c.title,
+    author: 'Kendi metnin',
+    level: '✍️',
+    emoji: '✍️',
+    color: '#8b5cf6',
+    page: c.page ?? 0,
+    pages: paginateText(c.text)
+  }
+}
 
 // Bir sayfanın metni: tanınan kelimeler etkileşimli, okunan kelime vurgulu,
 // okuma kontrolünde doğru / atlanan kelimeler işaretli
@@ -90,15 +106,20 @@ function Reader({ storyId, onExit }) {
       .then(list => setWords(new Map(list.map(w => [w.word, w]))))
   }, [])
 
-  useEffect(() => {
+   useEffect(() => {
+    const open = s => {
+      if (!s) return
+      const page = Math.min(s.page, s.pages.length - 1)
+      setStory(s)
+      setIndex(page - (page % perView))   // iki sayfalı görünümde soldaki sayfa çift olmalı
+      loadWords(s.pages)
+    }
+
+    if (storyId === 'custom') { open(customStory()); return }
+
     apiFetch(`/api/Stories/${storyId}`)
       .then(r => (r.ok ? r.json() : null))
-      .then(s => {
-        if (!s) return
-        setStory(s)
-        setIndex(s.page - (s.page % perView))   // iki sayfalı görünümde soldaki sayfa çift olmalı
-        loadWords(s.pages)
-      })
+      .then(open)
   }, [storyId, perView, loadWords])
 
   const stopSpeaking = useCallback(() => {
@@ -141,7 +162,8 @@ function Reader({ storyId, onExit }) {
       number: dir > 0 ? index + current.length : index + 1
     })
     setIndex(next)
-    apiFetch(`/api/Stories/${story.id}/progress`, { method: 'PUT', body: JSON.stringify({ page: next }) })
+    if (story.id === 'custom') saveCustomText({ ...loadCustomText(), page: next })
+    else apiFetch(`/api/Stories/${story.id}/progress`, { method: 'PUT', body: JSON.stringify({ page: next }) })
     setTimeout(() => setTurning(null), TURN_MS)
   }, [story, index, perView, turning, stopSpeaking])
 

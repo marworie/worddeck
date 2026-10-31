@@ -1,11 +1,13 @@
 // ============================================================
 // Library.jsx
 // Hikaye kitaplığı: seviyelere göre raflar, kapaklar, kaldığın sayfa.
-// Kitaba tıklayınca okuyucu açılır.
+// Kitaba tıklayınca okuyucu açılır. "Kendi metnin" ile kullanıcı
+// istediği metni yapıştırıp okuyucuda açabilir.
 // ============================================================
 
 import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
+import CustomTextModal from './CustomTextModal'
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1']
 const LEVEL_NAMES = { A1: 'Başlangıç', A2: 'Temel', B1: 'Orta', B2: 'İleri orta', C1: 'İleri' }
@@ -51,9 +53,10 @@ function Shelf({ title, subtitle, stories, onOpen }) {
   )
 }
 
-function Library({ onOpen }) {
+function Library({ onOpen, onOpenCustom }) {
   const [stories, setStories] = useState(null)
   const [level, setLevel] = useState('all')
+  const [showCustom, setShowCustom] = useState(false)
 
   useEffect(() => {
     apiFetch('/api/Stories').then(r => (r.ok ? r.json() : [])).then(setStories)
@@ -79,6 +82,8 @@ function Library({ onOpen }) {
             <button key={l} className={`chip ${level === l ? 'active' : ''}`} onClick={() => setLevel(l)}>{l}</button>
           ))}
         </div>
+
+        <button className="btn btn-primary" onClick={() => setShowCustom(true)}>✍️ Kendi metnin</button>
       </div>
 
       {level === 'all' && <Shelf title="📖 Okumaya devam et" stories={reading} onOpen={onOpen} />}
@@ -92,6 +97,8 @@ function Library({ onOpen }) {
           onOpen={onOpen}
         />
       ))}
+
+      {showCustom && <CustomTextModal onClose={() => setShowCustom(false)} onOpen={onOpenCustom} />}
     </div>
   )
 }

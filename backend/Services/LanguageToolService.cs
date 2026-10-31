@@ -49,7 +49,8 @@ namespace WordDeck.Services
                 var response = await client.PostAsync(Url, form);
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogWarning("LanguageTool {Status} döndü", (int)response.StatusCode);
+                    var error = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("LanguageTool {Status} döndü: {Error}", (int)response.StatusCode, error);
                     return null;
                 }
 

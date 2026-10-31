@@ -2445,3 +2445,17 @@ button {
 
   .desktop-hint { display: none; }                  /* telefonda tuş ipucu gereksiz */
 }
+
+.custom-text-modal { width: min(640px, 92vw); display: flex; flex-direction: column; gap: 12px; }
+.custom-textarea { min-height: 260px; resize: vertical; font-family: inherit; line-height: 1.6; }
+.word-counter { font-size: 13px; color: var(--text-muted, #6b7280); text-align: right; }
+.word-counter.error { color: #dc2626; font-weight: 600; }
+
+/* Kendi metnin penceresi */
+.ct-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: grid; place-items: center; z-index: 1000; padding: 16px; }
+.ct-modal { width: min(640px, 100%); max-height: 90vh; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
+.ct-input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface, #fff); color: inherit; font: inherit; box-sizing: border-box; }
+.ct-textarea { min-height: 260px; resize: vertical; line-height: 1.6; }
+.ct-counter { font-size: 13px; opacity: .7; text-align: right; }
+.ct-counter.error { color: #dc2626; opacity: 1; font-weight: 600; }
+.ct-actions { display: flex; justify-content: flex-end; gap: 8px; }
