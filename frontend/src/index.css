@@ -2459,3 +2459,23 @@ button {
 .ct-counter { font-size: 13px; opacity: .7; text-align: right; }
 .ct-counter.error { color: #dc2626; opacity: 1; font-weight: 600; }
 .ct-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Dikte */
+.dict-levels { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.dict-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.dict-card { margin-top: 16px; display: flex; flex-direction: column; gap: 14px; }
+.dict-play { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.dict-input { width: 100%; min-height: 90px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font: inherit; font-size: 17px; resize: vertical; background: transparent; color: inherit; box-sizing: border-box; }
+.dict-result { display: flex; flex-direction: column; gap: 8px; }
+.dict-score { font-size: 28px; font-weight: 700; }
+.dict-result-line { font-size: 19px; line-height: 2; margin: 0; }
+.dict-tok { padding: 2px 6px; border-radius: 6px; margin-right: 4px; }
+.dict-ok { background: #dcfce7; color: #166534; }
+.dict-wrong { background: #fee2e2; color: #991b1b; }
+.dict-missing { background: #fef3c7; color: #92400e; text-decoration: underline dotted; }
+.dict-extra { background: #e5e7eb; color: #6b7280; text-decoration: line-through; }
+.dict-typed { opacity: .7; margin-right: 6px; font-size: .85em; }
+.dict-legend { display: flex; gap: 6px; flex-wrap: wrap; }
+.dict-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.dict-summary { text-align: center; padding: 32px; }
+.dict-big { font-size: 56px; }

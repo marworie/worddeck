@@ -29,6 +29,7 @@ import LearningPath from './LearningPath'
 import LoginIntro from './LoginIntro'
 import { ReactLenis } from 'lenis/react'
 import 'lenis/dist/lenis.css'
+import Dictation from './Dictation'
 
 function App() {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches   // Sistem ayarlarında "hareketi azalt" açık olanlara yumuşak kaydırma uygulanmasın
@@ -177,6 +178,7 @@ function App() {
           )}
           {view === 'reader' && <Reader storyId={storyId} onExit={() => navigate('library')} />}
           {view === 'sentence' && <SentencePractice onExit={goHome} />}
+          {view === 'dictation' && <Dictation onExit={goHome} />}
           {view === 'path' && (
             <LearningPath
               onStartTest={({ level, unit, words }) => startQuiz({
