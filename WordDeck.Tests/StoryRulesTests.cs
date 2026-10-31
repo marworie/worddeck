@@ -66,5 +66,52 @@ namespace WordDeck.Tests
             Assert.Contains(body, result);
             Assert.DoesNotContain("other story", result);
         }
+        
+        [Fact]
+        public void EstimateLevel_ManyUnknownWords_RaisesOneLevel()
+        {
+            // %14 bilinmeyen → B1'den B2'ye
+            Assert.Equal("B2", StoryRules.EstimateLevel(Enumerable.Repeat("B1", 86), unknownCount: 14));
+        }
+
+        [Fact]
+        public void EstimateLevel_VeryManyUnknownWords_RaisesTwoLevels()
+        {
+            // %20 bilinmeyen → B1'den C1'e
+            Assert.Equal("C1", StoryRules.EstimateLevel(Enumerable.Repeat("B1", 80), unknownCount: 20));
+        }
+
+        [Fact]
+        public void EstimateLevel_BelowThreshold_KeepsLevel()
+        {
+            // %10 bilinmeyen → değişmez
+            Assert.Equal("B1", StoryRules.EstimateLevel(Enumerable.Repeat("B1", 90), unknownCount: 10));
+        }
+
+        [Fact]
+        public void EstimateLevel_NeverAboveC1()
+        {
+            Assert.Equal("C1", StoryRules.EstimateLevel(Enumerable.Repeat("C1", 70), unknownCount: 30));
+        }
+
+        [Fact]
+        public void EstimateLevel_FewUnknownWordsDoNotChangeLevel()
+        {
+            var levels = Enumerable.Repeat("A1", 19);
+            Assert.Equal("A1", StoryRules.EstimateLevel(levels, unknownCount: 1));
+        }
+
+        [Fact]
+        public void CommonWords_SkipsNamesAndContractions()
+        {
+            var words = StoryRules.CommonWords("Emma met Biscuit. She didn't run, she walked to the park.");
+
+            Assert.Contains("walked", words);
+            Assert.Contains("park", words);
+            Assert.DoesNotContain("emma", words);
+            Assert.DoesNotContain("biscuit", words);
+            Assert.DoesNotContain("didn", words);
+            Assert.DoesNotContain("to", words);
+        }
     }
 }

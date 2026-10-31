@@ -119,11 +119,43 @@ namespace WordDeck.Controllers
             return Ok(new { id, level, pageCount = pages.Count, wordCount = StoryRules.CountWords(body) });
         }
 
-        // Metindeki kelimeleri sözlükte bulup seviyelerinden hikayenin seviyesini tahmin eder
-        private async Task<string> EstimateLevelAsync(string body)
+        // POST api/Stories/relevel            → sadece önizleme: hangi hikaye hangi seviyeye geçer
+        // POST api/Stories/relevel?apply=true → değişiklikleri kaydeder
+        // Kendi yazdığımız hikayeler (Author = WordDeck) seviyesi elle verildiği için atlanır.
+        [HttpPost("relevel")]
+        public async Task<IActionResult> Relevel([FromQuery] bool apply = false)
         {
-            var words = body
-                .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+            var result = new List<object>();
+
+            foreach (var s in await _stories.GetAllRowsAsync())
+            {
+                if (s.Author == "WordDeck") continue;
+
+                var level = await EstimateLevelAsync(s.Body);
+                int pageCount = StoryRules.Paginate(s.Body, StoryRules.WordsPerPage(level)).Count;
+
+                if (apply && level != s.Level)
+                    await _stories.UpdateLevelAsync(s.Id, level, pageCount);
+
+                var (known, unknown) = await WordLevelsAsync(s.Body);
+                result.Add(new
+                {
+                    s.Title,
+                    oldLevel = s.Level,
+                    newLevel = level,
+                    baseLevel = StoryRules.EstimateLevel(known),                         // bilinmeyenler hariç
+                    unknownPercent = Math.Round(100.0 * unknown / Math.Max(known.Count + unknown, 1), 1),
+                    pageCount
+                });
+            }
+
+            return Ok(result);
+        }
+
+        // Metindeki kelimeleri sözlükte bular: bulunanların seviyeleri + bulunamayan kelime sayısı
+        private async Task<(List<string> Levels, int Unknown)> WordLevelsAsync(string body)
+        {
+            var words = StoryRules.CommonWords(body)
                 .Select(Lemmatizer.Normalize)
                 .Where(w => w.Length > 0)
                 .Distinct()
@@ -134,13 +166,15 @@ namespace WordDeck.Controllers
             foreach (var row in await _reader.FindHeadwordsAsync(GetUserId(), candidates.Values.SelectMany(c => c).Distinct()))
                 found.TryAdd(row.Headword, row.Level);
 
-            var levels = words
-                .Select(w => candidates[w].FirstOrDefault(found.ContainsKey))
-                .Where(h => h != null)
-                .Distinct()
-                .Select(h => found[h!]);
+            var headwords = words.Select(w => candidates[w].FirstOrDefault(found.ContainsKey)).ToList();
+            var levels = headwords.Where(h => h != null).Distinct().Select(h => found[h!]).ToList();
+            return (levels, headwords.Count(h => h == null));
+        }
 
-            return StoryRules.EstimateLevel(levels);
+        private async Task<string> EstimateLevelAsync(string body)
+        {
+            var (levels, unknown) = await WordLevelsAsync(body);
+            return StoryRules.EstimateLevel(levels, unknown);
         }
     }
 }

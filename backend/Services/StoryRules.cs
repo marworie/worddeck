@@ -141,8 +141,15 @@ namespace WordDeck.Services
             if (buffer.Count > 0) yield return string.Join(" ", buffer);
         }
 
-        // Hikayedeki farklı kelimelerin %90'ı hangi seviyede ya da altındaysa hikaye o seviyededir
-        public static string EstimateLevel(IEnumerable<string> wordLevels)
+        // Bilinmeyen kelime oranı bu eşikleri geçerse seviye 1 / 2 basamak artar.
+        // Eşikler kitaplıktaki hikayelerin gerçek oranlarına bakılarak seçildi
+        // (Grimm/Andersen çoğunlukla %5-13, O. Henry %14-17, Poe %15-21).
+        public const double UnknownBump1 = 0.14;
+        public const double UnknownBump2 = 0.20;
+
+        // Temel seviye: sözlükte bulunan farklı kelimelerin %90'ı hangi seviyede ya da altındaysa o.
+        // Sonra sözlükte bulunamayan kelime oranına göre artırılır (eski dil, nadir kelimeler).
+        public static string EstimateLevel(IEnumerable<string> wordLevels, int unknownCount = 0)
         {
             var ranks = wordLevels
                 .Select(l => Array.IndexOf(Levels, l))
@@ -151,8 +158,19 @@ namespace WordDeck.Services
                 .ToList();
 
             if (ranks.Count == 0) return "A1";
-            int index = (int)Math.Ceiling(ranks.Count * 0.9) - 1;
-            return Levels[ranks[index]];
+            int baseRank = ranks[(int)Math.Ceiling(ranks.Count * 0.9) - 1];
+
+            double unknownRatio = (double)Math.Max(unknownCount, 0) / (ranks.Count + Math.Max(unknownCount, 0));
+            int bump = unknownRatio >= UnknownBump2 ? 2 : unknownRatio >= UnknownBump1 ? 1 : 0;
+
+            return Levels[Math.Min(baseRank + bump, Levels.Length - 1)];
         }
+
+        // Seviye hesabına girecek kelimeler: metinde en az bir kez küçük harfle geçen, 3+ harfli kelimeler.
+        // Böylece özel isimler (Emma, Madrid) ve kesmeli kelimeler (don't) hesaba girmez.
+        public static HashSet<string> CommonWords(string body) =>
+            Regex.Matches(body, @"(?<![\w'’])[a-z]{3,}(?![\w'’])")
+                .Select(m => m.Value)
+                .ToHashSet();
     }
 }

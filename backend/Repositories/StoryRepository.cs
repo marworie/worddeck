@@ -10,6 +10,8 @@ namespace WordDeck.Repositories
         Task SaveProgressAsync(int userId, int storyId, int page);
         Task<bool> TitleExistsAsync(string title);
         Task<int> AddAsync(StoryRow story);
+        Task<IEnumerable<StoryRow>> GetAllRowsAsync();
+        Task UpdateLevelAsync(int id, string level, int pageCount);
     }
 
     public class StoryRepository : BaseRepository, IStoryRepository
@@ -56,5 +58,13 @@ namespace WordDeck.Repositories
                   VALUES (@Title, @Author, @Level, @Emoji, @Color, @CoverUrl, @Body, @WordCount, @PageCount, @Source)",
                 s))
             .Single();
+
+        public Task<IEnumerable<StoryRow>> GetAllRowsAsync() =>
+            QueryAsync<StoryRow>("SELECT * FROM Stories");
+
+        // Seviye değişince sayfa uzunluğu da değişir (A1 100, A2 120, diğerleri 150 kelime)
+        public Task UpdateLevelAsync(int id, string level, int pageCount) =>
+            ExecuteAsync("UPDATE Stories SET Level = @Level, PageCount = @PageCount WHERE Id = @Id",
+                new { Id = id, Level = level, PageCount = pageCount });
     }
 }
