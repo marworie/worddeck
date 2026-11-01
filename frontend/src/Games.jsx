@@ -166,12 +166,176 @@ function MatchGame({ source, onBack }) {
   )
 }
 
+// ---------- Adam asmaca ----------
+const MAX_WRONG = 6
+const ROUND = 10
+const ALPHABET = 'abcdefghijklmnopqrstuvwxyz'.split('')
+
+// Adam çizimi: hata sayısı kadar parça görünür
+function Gallows({ wrong }) {
+  const parts = [
+    <circle key="head" cx="140" cy="60" r="16" />,
+    <line key="body" x1="140" y1="76" x2="140" y2="126" />,
+    <line key="armL" x1="140" y1="90" x2="118" y2="110" />,
+    <line key="armR" x1="140" y1="90" x2="162" y2="110" />,
+    <line key="legL" x1="140" y1="126" x2="122" y2="156" />,
+    <line key="legR" x1="140" y1="126" x2="158" y2="156" />
+  ]
+  return (
+    <svg className="gallows" viewBox="0 0 200 190" aria-hidden="true">
+      <line x1="20" y1="180" x2="120" y2="180" />
+      <line x1="60" y1="180" x2="60" y2="20" />
+      <line x1="60" y1="20" x2="140" y2="20" />
+      <line x1="140" y1="20" x2="140" y2="44" />
+      {parts.slice(0, wrong)}
+    </svg>
+  )
+}
+
+function Hangman({ source, onBack }) {
+  const [words, setWords] = useState(null)
+  const [index, setIndex] = useState(0)
+  const [guessed, setGuessed] = useState(new Set())
+  const [hint, setHint] = useState(false)
+  const [solved, setSolved] = useState(0)
+
+  const current = words?.[index]
+  const answer = current?.headword.toLowerCase() ?? ''
+  const letters = [...new Set(answer.split('').filter(c => ALPHABET.includes(c)))]
+  const wrongCount = [...guessed].filter(c => !answer.includes(c)).length + (hint ? 1 : 0)
+  const won = current && letters.every(c => guessed.has(c))
+  const lost = current && !won && wrongCount >= MAX_WRONG
+  const over = won || lost
+  const finished = words && index >= words.length
+
+  function load() {
+    setWords(null)
+    setIndex(0)
+    setSolved(0)
+    resetWord()
+    apiFetch(`/api/Games/words?source=${source}&count=20`)
+      .then(r => (r.ok ? r.json() : []))
+      .then(list => setWords(
+        // Sadece harf (ve boşluk/tire) içeren, 3–12 harfli kelimeler
+        list.filter(w => /^[a-z][a-z -]{2,11}$/i.test(w.headword)).slice(0, ROUND)
+      ))
+  }
+
+  function resetWord() {
+    setGuessed(new Set())
+    setHint(false)
+  }
+
+  useEffect(load, [source])   // eslint-disable-line react-hooks/exhaustive-deps
+
+  function guess(c) {
+    if (over || guessed.has(c)) return
+    setGuessed(g => new Set(g).add(c))
+  }
+
+  // Kelime çözülünce say ve sesli oku
+  useEffect(() => {
+    if (!over) return
+    if (won) setSolved(n => n + 1)
+    speakWord(current.headword)
+  }, [over])   // eslint-disable-line react-hooks/exhaustive-deps
+
+  function next() {
+    resetWord()
+    setIndex(i => i + 1)
+  }
+
+  // Bilgisayar klavyesi: harf tahmin eder, Enter sonraki kelimeye geçer
+  useEffect(() => {
+    const onKey = e => {
+      const k = e.key.toLowerCase()
+      if (ALPHABET.includes(k)) guess(k)
+      else if (e.key === 'Enter' && over) next()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
+  if (!words) return <div className="panel">Yükleniyor...</div>
+  if (words.length === 0) {
+    return (
+      <div className="panel">
+        Bu kaynakta uygun kelime yok.
+        <div><button className="btn btn-ghost" onClick={onBack}>← Geri</button></div>
+      </div>
+    )
+  }
+
+  if (finished) {
+    return (
+      <div className="page">
+        <div className="panel dict-summary">
+          <div className="dict-big">{solved === words.length ? '🏆' : solved >= words.length / 2 ? '🎉' : '💪'}</div>
+          <h2>{solved} / {words.length} kelime</h2>
+          <div className="dict-actions" style={{ justifyContent: 'center' }}>
+            <button className="btn btn-primary" onClick={load}>Tekrar oyna</button>
+            <button className="btn btn-ghost" onClick={onBack}>Oyunlar</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="page">
+      <div className="dict-head">
+        <button className="btn btn-ghost" onClick={onBack}>← Oyunlar</button>
+        <span className="muted small">{index + 1} / {words.length} · ✅ {solved} · ❤️ {MAX_WRONG - wrongCount} hak</span>
+      </div>
+
+      <div className="panel hangman">
+        <Gallows wrong={wrongCount} />
+
+        <div className="hangman-word">
+          {answer.split('').map((c, i) => (
+            <span key={i} className={`hm-letter ${ALPHABET.includes(c) ? '' : 'hm-space'} ${lost && !guessed.has(c) ? 'hm-missed' : ''}`}>
+              {!ALPHABET.includes(c) ? c : guessed.has(c) || over ? c : ''}
+            </span>
+          ))}
+        </div>
+
+        {hint || over
+          ? <p className="muted">🇹🇷 {current.meaning}</p>
+          : <button className="btn btn-ghost small" onClick={() => setHint(true)} disabled={wrongCount >= MAX_WRONG - 1}>
+              💡 İpucu (1 hak)
+            </button>}
+
+        {over ? (
+          <div className="hm-result">
+            <b>{won ? '🎉 Bildin!' : `😵 Kelime: ${current.headword}`}</b>
+            <button className="btn btn-primary" onClick={next}>Sonraki →</button>
+          </div>
+        ) : (
+          <div className="hm-keys">
+            {ALPHABET.map(c => (
+              <button
+                key={c}
+                className={`hm-key ${guessed.has(c) ? (answer.includes(c) ? 'hit' : 'miss') : ''}`}
+                disabled={guessed.has(c)}
+                onClick={() => guess(c)}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ---------- Oyunlar sayfası ----------
 function Games() {
   const [source, setSource] = useState('mine')
   const [game, setGame] = useState(null)
 
   if (game === 'match') return <MatchGame source={source} onBack={() => setGame(null)} />
+  if (game === 'hangman') return <Hangman source={source} onBack={() => setGame(null)} />
 
   return (
     <div className="page">
@@ -192,11 +356,11 @@ function Games() {
           <b>Eşleştirme</b>
           <span className="muted small">İngilizce kelimeyi Türkçe anlamıyla eşleştir. Ne kadar hızlısın?</span>
         </button>
-        <div className="game-card panel disabled">
+        <button className="game-card panel" onClick={() => setGame('hangman')}>
           <span className="game-emoji">🪢</span>
           <b>Adam asmaca</b>
-          <span className="muted small">Yakında</span>
-        </div>
+          <span className="muted small">Harf harf tahmin et, 6 hatada adam asılır. İpucu 1 hak yer.</span>
+        </button>
       </div>
     </div>
   )
