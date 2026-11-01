@@ -87,6 +87,7 @@ builder.Services.AddScoped<ISentenceRepository, SentenceRepository>();
 builder.Services.AddScoped<LanguageToolService>();
 builder.Services.AddScoped<IPathRepository, PathRepository>();
 builder.Services.AddScoped<IDictationRepository, DictationRepository>();
+builder.Services.AddScoped<IGamesRepository, GamesRepository>();
 
 var app = builder.Build();
 

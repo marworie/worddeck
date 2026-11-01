@@ -13,6 +13,7 @@ const NAV = [
   { view: 'path', icon: 'ti-route', label: 'Öğrenme yolu' },
   { view: 'hard', icon: 'ti-flame', label: 'Zorlandıklarım' },
   { view: 'quizSetup', icon: 'ti-checklist', label: 'Sınav', mobile: true },
+  { view: 'games', icon: 'ti-puzzle', label: 'Oyunlar', mobile: true },
   { view: 'search', icon: 'ti-search', label: 'Kelime ara' },
   { view: 'themes', icon: 'ti-category', label: 'Temalar' },
   { view: 'library', icon: 'ti-book', label: 'Okuma', short: 'Oku', mobile: true },

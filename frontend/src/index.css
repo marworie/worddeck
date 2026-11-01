@@ -2494,3 +2494,19 @@ button {
 .story-end > div:nth-child(2) { flex: 1; min-width: 200px; }
 .story-end p { margin: 4px 0 0; }
 .story-end-emoji { font-size: 36px; }
+
+/* Oyunlar */
+.game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 18px; }
+.game-card { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left; cursor: pointer; border: 1px solid var(--border); font: inherit; color: inherit; transition: transform .15s; }
+.game-card:hover:not(.disabled) { transform: translateY(-3px); }
+.game-card.disabled { opacity: .5; cursor: default; }
+.game-emoji { font-size: 36px; }
+
+.match-board { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+.match-col { display: flex; flex-direction: column; gap: 10px; }
+.match-card { padding: 14px; border-radius: 12px; border: 2px solid var(--border); background: var(--surface, #fff); color: inherit; font: inherit; font-size: 16px; cursor: pointer; transition: all .2s; }
+.match-card:hover:not(:disabled) { border-color: #0d9488; }
+.match-card.selected { border-color: #0d9488; background: #ccfbf1; color: #134e4a; }
+.match-card.matched { opacity: 0; transform: scale(.9); cursor: default; }
+.match-card.wrong { border-color: #dc2626; background: #fee2e2; color: #991b1b; animation: shake .3s; }
+@keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }

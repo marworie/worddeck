@@ -31,6 +31,7 @@ import { ReactLenis } from 'lenis/react'
 import 'lenis/dist/lenis.css'
 import Dictation from './Dictation'
 import Badges, { checkNewBadges } from './Badges'
+import Games from './Games'
 
 function App() {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches   // Sistem ayarlarında "hareketi azalt" açık olanlara yumuşak kaydırma uygulanmasın
@@ -173,6 +174,7 @@ function App() {
           )}
           {view === 'search' && <Search query={searchQuery} onQueryChange={handleSearchInput} onNavigate={navigate} />}
           {view === 'notebook' && <Notebook onBack={goHome} onStartQuiz={startQuiz} />}
+          {view === 'games' && <Games />}
           {view === 'themes' && <Themes onStartQuiz={startQuiz} />}
           {view === 'phonetics' && <PhoneticGuide onBack={goHome} />}
           {view === 'settings' && <Settings onBack={goHome} />}
