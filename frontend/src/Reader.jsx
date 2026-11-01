@@ -71,7 +71,7 @@ function PageText({ text, pageIndex, words, active, marks, onHover, onLeave, onP
   })
 }
 
-function Reader({ storyId, onExit }) {
+function Reader({ storyId, onExit, onStartQuiz }) {
   const showToast = useToast()
   const [story, setStory] = useState(null)
   const [words, setWords] = useState(new Map())
@@ -351,6 +351,13 @@ function Reader({ storyId, onExit }) {
   const okCount = states.filter(s => s === 'ok').length
   const missedWords = [...new Set(expected.filter((e, i) => states[i] === 'missed').map(e => e.key))]
   const score = pos > 0 ? Math.round((okCount / pos) * 100) : 0
+  // Son sayfa: bilinmeyen ve tekrar edilecek kelimelerden test
+  const atEnd = lastVisible >= story.pages.length
+  const quizIds = [...new Set(
+    [...words.values()]
+      .filter(w => w.status === 'new' || w.status === 'studying')
+      .map(w => w.wordId)
+  )]
 
   return (
     <div className="reader" style={{ '--book': story.color, ...colorVars }}>
@@ -473,6 +480,27 @@ function Reader({ storyId, onExit }) {
         </span>
         <div className="reader-progress"><span style={{ width: `${(lastVisible / story.pages.length) * 100}%` }} /></div>
       </div>
+
+      {atEnd && (
+        <div className="story-end panel">
+          <div className="story-end-emoji">🎉</div>
+          <div>
+            <b>Hikayeyi bitirdin!</b>
+            {quizIds.length >= 4 ? (
+              <p className="muted small">
+                Bu hikayede {quizIds.length} bilmediğin ya da tekrar etmen gereken kelime vardı. Hepsini hatırlıyor musun?
+              </p>
+            ) : (
+              <p className="muted small">Bu hikayedeki neredeyse bütün kelimeleri biliyorsun 👏</p>
+            )}
+          </div>
+          {quizIds.length >= 4 && (
+            <button className="btn btn-primary" onClick={() => { stopSpeaking(); onStartQuiz(quizIds) }}>
+              📝 Kelime testi
+            </button>
+          )}
+        </div>
+      )}
 
       {tip && (
         <div className="word-tip" style={{ left: tip.x, top: tip.y }}>

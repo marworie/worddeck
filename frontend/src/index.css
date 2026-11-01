@@ -2488,3 +2488,9 @@ button {
 .badge-card .reader-progress { width: 100%; }
 .badge-emoji { font-size: 40px; }
 .badge-done { color: #16a34a; font-weight: 600; font-size: 13px; }
+
+/* Hikaye sonu */
+.story-end { display: flex; align-items: center; gap: 14px; margin-top: 16px; flex-wrap: wrap; }
+.story-end > div:nth-child(2) { flex: 1; min-width: 200px; }
+.story-end p { margin: 4px 0 0; }
+.story-end-emoji { font-size: 36px; }

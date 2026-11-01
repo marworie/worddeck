@@ -163,7 +163,8 @@ function App() {
               wordIds={quizConfig.wordIds}
               pathUnit={quizConfig.pathUnit}
               onExit={() => navigate(
-                quizConfig.pathUnit ? 'path'
+                quizConfig.fromStory ? 'reader'
+                  : quizConfig.pathUnit ? 'path'
                   : quizConfig.listId ? 'notebook'
                   : quizConfig.themeId ? 'themes'
                   : 'quizSetup'
@@ -182,7 +183,13 @@ function App() {
               onOpenCustom={() => { setStoryId('custom'); navigate('reader') }}
             />
           )}
-          {view === 'reader' && <Reader storyId={storyId} onExit={() => navigate('library')} />}
+          {view === 'reader' && (
+            <Reader
+              storyId={storyId}
+              onExit={() => navigate('library')}
+              onStartQuiz={ids => startQuiz({ wordIds: ids, count: Math.min(10, ids.length), fromStory: true })}
+            />
+          )}
           {view === 'sentence' && <SentencePractice onExit={goHome} />}
           {view === 'dictation' && <Dictation onExit={goHome} />}
           {view === 'badges' && <Badges />}
