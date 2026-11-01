@@ -18,6 +18,7 @@ const NAV = [
   { view: 'library', icon: 'ti-book', label: 'Okuma', short: 'Oku', mobile: true },
   { view: 'sentence', icon: 'ti-pencil', label: 'Cümle kur' },
   { view: 'dictation', icon: 'ti-headphones', label: 'Dikte' },
+  { view: 'badges', icon: 'ti-award', label: 'Rozetler' },
   { view: 'notebook', icon: 'ti-notebook', label: 'Defterim' },
   { view: 'stats', icon: 'ti-chart-bar', label: 'İstatistikler' },
   { view: 'phonetics', icon: 'ti-language', label: 'Fonetik rehberi' }

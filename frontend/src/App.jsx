@@ -30,6 +30,7 @@ import LoginIntro from './LoginIntro'
 import { ReactLenis } from 'lenis/react'
 import 'lenis/dist/lenis.css'
 import Dictation from './Dictation'
+import Badges, { checkNewBadges } from './Badges'
 
 function App() {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches   // Sistem ayarlarında "hareketi azalt" açık olanlara yumuşak kaydırma uygulanmasın
@@ -87,6 +88,11 @@ function App() {
       window.removeEventListener('auth-expired', onAuthExpired)
     }
   }, [showToast])
+
+  // Ana sayfaya her dönüşte yeni rozet var mı bak
+  useEffect(() => {
+    if (isLoggedIn && view === 'home') checkNewBadges(showToast)
+  }, [isLoggedIn, view, showToast])
 
   if (!isLoggedIn) {
     return <Login onLoginSuccess={() => { setIsLoggedIn(true); if (!reduceMotion) setShowIntro(true) }} />
@@ -179,6 +185,7 @@ function App() {
           {view === 'reader' && <Reader storyId={storyId} onExit={() => navigate('library')} />}
           {view === 'sentence' && <SentencePractice onExit={goHome} />}
           {view === 'dictation' && <Dictation onExit={goHome} />}
+          {view === 'badges' && <Badges />}
           {view === 'path' && (
             <LearningPath
               onStartTest={({ level, unit, words }) => startQuiz({

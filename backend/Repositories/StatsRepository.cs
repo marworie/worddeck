@@ -10,6 +10,8 @@ namespace WordDeck.Repositories
         Task<IEnumerable<DailyCountDto>> GetDailyAsync(int userId, DateTime from);
         Task<IEnumerable<BoxCountDto>> GetBoxesAsync(int userId);
         Task<IEnumerable<ForgottenWordDto>> GetMostForgottenAsync(int userId, int top);
+        Task<BadgeStats> GetBadgeStatsAsync(int userId);
+        Task<IEnumerable<DateTime>> GetStudyDatesAsync(int userId, DateTime from);
     }
 
     public class StatsRepository : BaseRepository, IStatsRepository
@@ -58,5 +60,23 @@ namespace WordDeck.Repositories
                   WHERE uw.UserId = @UserId AND uw.WrongCount > 0
                   ORDER BY uw.WrongCount DESC, uw.CorrectCount",
                 new { UserId = userId, Top = top });
+
+        // Rozetler için: öğrenilen kelime, bitirilen hikaye, tamamlanan ünite (seri ayrıca hesaplanır)
+        public async Task<BadgeStats> GetBadgeStatsAsync(int userId) =>
+            await QuerySingleOrDefaultAsync<BadgeStats>(
+                @"SELECT
+                    (SELECT COUNT(*) FROM UserWords WHERE UserId = @UserId AND Box = 6) AS LearnedWords,
+                    (SELECT COUNT(*) FROM UserStoryProgress p
+                       INNER JOIN Stories s ON s.Id = p.StoryId
+                       WHERE p.UserId = @UserId AND p.Page + 1 >= s.PageCount) AS StoriesFinished,
+                    (SELECT COUNT(*) FROM UserUnitProgress
+                       WHERE UserId = @UserId AND CompletedAt IS NOT NULL) AS UnitsCompleted",
+                new { UserId = userId }) ?? new BadgeStats();
+
+        public Task<IEnumerable<DateTime>> GetStudyDatesAsync(int userId, DateTime from) =>
+            QueryAsync<DateTime>(
+                @"SELECT StudyDate FROM StudyDays
+                  WHERE UserId = @UserId AND StudyDate >= @From AND CardsReviewed > 0",
+                new { UserId = userId, From = from });
     }
 }
