@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
 import CustomTextModal from './CustomTextModal'
+import PageHeader from './PageHeader'
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1']
 const LEVEL_NAMES = { A1: 'Başlangıç', A2: 'Temel', B1: 'Orta', B2: 'İleri orta', C1: 'İleri' }
@@ -70,21 +71,20 @@ function Library({ onOpen, onOpenCustom }) {
 
   return (
     <div className="library">
-      <div className="library-head">
-        <div>
-          <h2>📚 Okuma Kitaplığı</h2>
-          <p className="muted">{stories.length} hikaye · Kelimelerin üzerine gelince anlamını gör, tıklayınca kaydet</p>
-        </div>
-
+      <PageHeader
+        icon="ti-book"
+        tone="t-blue"
+        title="Okuma Kitaplığı"
+        subtitle={`${stories.length} hikaye · Kelimelerin üzerine gelince anlamını gör, tıklayınca kaydet`}
+      >
         <div className="chip-row">
           <button className={`chip ${level === 'all' ? 'active' : ''}`} onClick={() => setLevel('all')}>Tümü</button>
           {LEVELS.filter(l => stories.some(s => s.level === l)).map(l => (
             <button key={l} className={`chip ${level === l ? 'active' : ''}`} onClick={() => setLevel(l)}>{l}</button>
           ))}
         </div>
-
         <button className="btn btn-primary" onClick={() => setShowCustom(true)}>✍️ Kendi metnin</button>
-      </div>
+      </PageHeader>
 
       {level === 'all' && <Shelf title="📖 Okumaya devam et" stories={reading} onOpen={onOpen} />}
 

@@ -2943,3 +2943,161 @@ h1, h2, h3, .page-title { letter-spacing: -0.5px; }
 @media (max-width: 768px) {
   .sidebar { overflow: visible; }   /* telefonda alt çubuk, kaydırma gerekmez */
 }
+
+/* ---------- Ortak sayfa başlığı ---------- */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.page-header-main { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.page-header-icon {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: var(--tile-bg);
+  color: var(--tile-fg);
+  font-size: 28px;
+}
+.page-header-title { margin: 0; font-size: clamp(24px, 3vw, 32px); font-weight: 800; letter-spacing: -0.5px; }
+.page-header-sub { margin: 2px 0 0; color: var(--muted); font-weight: 500; }
+.page-header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* ---------- Oyun kartları: pastel ---------- */
+.game-grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+.game-card {
+  border: none;
+  padding: 22px;
+  gap: 8px;
+  background: var(--tile-bg);
+  box-shadow: none;
+}
+.game-card b { font-size: 18px; color: var(--text); }
+.game-card .game-emoji {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: var(--card);
+  font-size: 30px;
+  margin-bottom: 6px;
+  box-shadow: var(--shadow);
+}
+.game-play {
+  margin-top: auto;
+  padding-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  color: var(--tile-fg);
+}
+.game-card:hover { transform: translateY(-4px); }
+
+/* ---------- Seviye seçme kutucukları (dikte vb.) ---------- */
+.level-picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-top: 10px; }
+.level-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 22px;
+  border: none;
+  border-radius: 22px;
+  background: var(--tile-bg);
+  color: var(--tile-fg);
+  font: inherit;
+  cursor: pointer;
+  transition: transform .15s;
+}
+.level-pick b { font-size: 32px; font-weight: 800; line-height: 1; }
+.level-pick span { font-weight: 700; color: var(--text); }
+.level-pick:hover { transform: translateY(-4px); }
+.level-pick:active { transform: scale(.97); }
+
+@media (max-width: 600px) {
+  .page-header-icon { width: 46px; height: 46px; font-size: 22px; border-radius: 14px; }
+  .level-picks { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ---------- Filtre hapları da diğer haplar gibi ---------- */
+.filter-chip {
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-weight: 700;
+  transition: transform .12s, background .2s;
+}
+.filter-chip:active { transform: scale(.95); }
+
+/* ---------- Sınav: bölüm kutucukları ---------- */
+.quiz-info-grid { gap: 14px; }
+.quiz-info {
+  border-radius: 20px;
+  padding: 18px;
+  background: var(--tile-bg);
+  border: none;
+}
+.quiz-info b { color: var(--text); }
+.quiz-info-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--card);
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+.quiz-card { padding: 24px; }
+.quiz-start-btn { padding: 12px 22px; border-radius: 999px; }
+
+/* ---------- Defterim: renkli liste kartları ---------- */
+.list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.list-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 20px;
+  border: none;
+  border-radius: 22px;
+  background: var(--tile-bg);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .15s;
+}
+.list-card:hover { transform: translateY(-4px); }
+.list-card-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--tile-fg);
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+.list-card-name { font-size: 17px; font-weight: 800; }
+.new-list-form { border-radius: var(--radius); }
+.new-list-form input { border-radius: 999px; }
+
+/* ---------- Kelime listeleri: satırlar ---------- */
+.word-list { border-radius: var(--radius); }
+.search-box { border-radius: var(--radius); }
+
+/* Dikte: seviye kutucukları sayfadan taşmasın */
+.page.dictation { width: 100%; max-width: 100%; }
+.level-picks { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 600px) {
+  .level-picks { grid-template-columns: repeat(2, 1fr); }
+}

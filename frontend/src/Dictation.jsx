@@ -7,6 +7,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { apiFetch } from './api'
 import { pickEnglishVoice } from './readerText'
+import PageHeader from './PageHeader'
+import { LEVEL_NAME, LEVEL_TONE } from './labels'
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1']
 const COUNT = 10
@@ -97,14 +99,16 @@ function Dictation({ onExit }) {
   }
 
   // ---------- Seviye seçimi ----------
-  if (!level) {
+   if (!level) {
     return (
       <div className="page dictation">
-        <h2 className="page-title">🎧 Dikte</h2>
-        <p className="muted">Cümleyi dinle, duyduğunu yaz. Her seferde {COUNT} cümle.</p>
-        <div className="dict-levels">
+        <PageHeader icon="ti-headphones" tone="t-lilac" title="Dikte" subtitle={`Cümleyi dinle, duyduğunu yaz. Her seferde ${COUNT} cümle.`} />
+        <div className="level-picks">
           {LEVELS.map(l => (
-            <button key={l} className="btn btn-primary" onClick={() => start(l)}>{l}</button>
+            <button key={l} className={`level-pick ${LEVEL_TONE[l]}`} onClick={() => start(l)}>
+              <b>{l}</b>
+              <span>{LEVEL_NAME[l]}</span>
+            </button>
           ))}
         </div>
         {!canSpeak && <p className="muted small">Tarayıcın sesli okumayı desteklemiyor, Chrome ya da Edge dene.</p>}

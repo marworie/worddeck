@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
+import PageHeader from './PageHeader'
 
 function Badges() {
   const [badges, setBadges] = useState(null)
@@ -19,8 +20,7 @@ function Badges() {
 
   return (
     <div className="page">
-      <h2 className="page-title">🏅 Rozetler</h2>
-      <p className="muted">{badges.length} rozetten {earnedCount} tanesini kazandın.</p>
+      <PageHeader icon="ti-award" tone="t-yellow" title="Rozetler" subtitle={`${badges.length} rozetten ${earnedCount} tanesini kazandın`} />
 
       <div className="badge-grid">
         {badges.map(b => (

@@ -8,6 +8,10 @@ import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
 import { useToast } from './ToastContext'
 import WordRow from './WordRow'
+import PageHeader from './PageHeader'
+
+// Liste kartları sırayla bu renkleri alır (favoriler hep sarı)
+const LIST_TONES = ['t-teal', 't-blue', 't-lilac', 't-peach', 't-pink']
 
 // onStartQuiz({ listId, listName, count }): listeden sınav başlatmak için
 function Notebook({ onBack, onStartQuiz }) {
@@ -129,12 +133,17 @@ function Notebook({ onBack, onStartQuiz }) {
   return (
     <div className="notebook-page">
       <button className="btn btn-ghost back-btn" onClick={onBack}>← Ana sayfa</button>
-      <h2 className="page-title">Kelime defterim</h2>
+      <PageHeader icon="ti-notebook" tone="t-yellow" title="Kelime defterim" subtitle={`${lists.length} liste · Favorilerin ve kendi listelerin`} />
 
       <div className="list-grid">
-        {lists.map(l => (
-          <button key={l.id} className={`list-card panel ${l.isFavorites ? 'favorites' : ''}`} onClick={() => openList(l.id)}>
-            <span className="list-card-name">{l.isFavorites ? '★ ' : ''}{l.name}</span>
+        {lists.map((l, i) => (
+          <button
+            key={l.id}
+            className={`list-card ${l.isFavorites ? 't-yellow' : LIST_TONES[i % LIST_TONES.length]}`}
+            onClick={() => openList(l.id)}
+          >
+            <span className="list-card-icon">{l.isFavorites ? '★' : '📒'}</span>
+            <span className="list-card-name">{l.name}</span>
             <span className="muted small">{l.wordCount} kelime</span>
           </button>
         ))}

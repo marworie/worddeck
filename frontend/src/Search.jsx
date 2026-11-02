@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
 import { POS_TR } from './labels'
 import WordRow from './WordRow'
+import PageHeader from './PageHeader'
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1']
 const POS_OPTIONS = ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'pronoun', 'conjunction', 'determiner']
@@ -70,7 +71,7 @@ function Search({ query, onQueryChange, onNavigate }) {
 
   return (
     <div className="search-page">
-      <h2 className="page-title">Kelime ara</h2>
+      <PageHeader icon="ti-search" tone="t-blue" title="Kelime ara" subtitle="İngilizce ya da Türkçe yaz, seviyeye ve türe göre süz" />
 
       <div className="panel search-box">
         <div className="search-filters">

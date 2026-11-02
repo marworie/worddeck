@@ -32,3 +32,7 @@ export const QUESTION_TYPES_TR = {
   listening: 'Dinleme',
   speaking: 'Söyleme'
 }
+
+// Her seviyenin kalıcı rengi (pastel kutucuk sınıfı) ve adı
+export const LEVEL_TONE = { A1: 't-teal', A2: 't-blue', B1: 't-lilac', B2: 't-peach', C1: 't-pink' }
+export const LEVEL_NAME = { A1: 'Başlangıç', A2: 'Temel', B1: 'Orta', B2: 'Orta üstü', C1: 'İleri' }

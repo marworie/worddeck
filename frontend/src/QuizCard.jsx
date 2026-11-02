@@ -41,10 +41,6 @@ function QuizCard({ onStart }) {
 
   return (
     <div className="quiz-card panel">
-      <div className="quiz-card-head">
-        <p className="muted">Çalıştığın kelimelerden karışık sorularla kendini test et</p>
-      </div>
-
       <div className="quiz-options">
         <div className="quiz-option-group">
           <span className="network-title">Seviye</span>
@@ -119,10 +115,10 @@ function QuizCard({ onStart }) {
 }
 
 const SECTION_INFO = [
-  { icon: '📖', title: 'Okuma', desc: 'Cümle, tanım ve anlamdan doğru kelimeyi seç' },
-  { icon: '🎧', title: 'Dinleme', desc: 'Cümleyi dinle, duyduğun kelimeyi bul' },
-  { icon: '✍️', title: 'Yazma', desc: 'Boşluğa gelen kelimeyi kendin yaz' },
-  { icon: '🎤', title: 'Konuşma', desc: 'Kelimeyi mikrofona doğru söyle' }
+  { icon: '📖', tone: 't-blue',  title: 'Okuma',   desc: 'Cümle, tanım ve anlamdan doğru kelimeyi seç' },
+  { icon: '🎧', tone: 't-lilac', title: 'Dinleme', desc: 'Cümleyi dinle, duyduğun kelimeyi bul' },
+  { icon: '✍️', tone: 't-peach', title: 'Yazma',   desc: 'Boşluğa gelen kelimeyi kendin yaz' },
+  { icon: '🎤', tone: 't-pink',  title: 'Konuşma', desc: 'Kelimeyi mikrofona doğru söyle' }
 ]
 
 // Sınav sayfasındaki bilgi alanı: bölümler ve diğer sınav kısayolları
@@ -133,7 +129,7 @@ export function QuizInfo({ onNavigate }) {
         <h3 className="section-title">Sınav 4 bölümden oluşur</h3>
         <div className="quiz-info-grid">
           {SECTION_INFO.map(s => (
-            <div key={s.title} className="quiz-info">
+            <div key={s.title} className={`quiz-info ${s.tone}`}>
               <span className="quiz-info-icon">{s.icon}</span>
               <b>{s.title}</b>
               <span className="muted small">{s.desc}</span>

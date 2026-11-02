@@ -1,11 +1,13 @@
 // ============================================================
 // Games.jsx
-// Kelime oyunları: kaynak seçimi + eşleştirme oyunu
+// Kelime oyunları: kaynak seçimi + 5 oyun (eşleştirme, hafıza,
+// hızlı karar, harf karıştırma, adam asmaca)
 // ============================================================
 
 import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
 import { speakWord } from './readerText'
+import PageHeader from './PageHeader'
 
 const SOURCES = [
   { id: 'mine', label: 'Kelimelerim' },
@@ -725,11 +727,11 @@ function Scramble({ source, onBack }) {
 
 // ---------- Oyunlar sayfası ----------
 const GAMES = [
-  { id: 'match',    emoji: '🃏', title: 'Eşleştirme',      desc: 'İngilizce kelimeyi Türkçe anlamıyla eşleştir. Ne kadar hızlısın?' },
-  { id: 'memory',   emoji: '🧠', title: 'Hafıza kartları', desc: 'Kartlar kapalı! Kelimeyi ve anlamını hatırlayarak en az hamlede eşleştir.' },
-  { id: 'quick',    emoji: '⚡', title: 'Hızlı karar',     desc: '60 saniye: anlam doğru mu yanlış mı? ← → tuşlarıyla oyna.' },
-  { id: 'scramble', emoji: '🔀', title: 'Harf karıştırma', desc: 'Karışık harflerden kelimeyi kur. Türkçe anlamı ipucu.' },
-  { id: 'hangman',  emoji: '🪢', title: 'Adam asmaca',     desc: 'Harf harf tahmin et, 6 hatada adam asılır.' }
+  { id: 'match',    emoji: '🃏', tone: 't-teal',   title: 'Eşleştirme',      desc: 'İngilizce kelimeyi Türkçe anlamıyla eşleştir. Ne kadar hızlısın?' },
+  { id: 'memory',   emoji: '🧠', tone: 't-pink',   title: 'Hafıza kartları', desc: 'Kartlar kapalı! Kelimeyi ve anlamını hatırlayarak en az hamlede eşleştir.' },
+  { id: 'quick',    emoji: '⚡', tone: 't-yellow', title: 'Hızlı karar',     desc: '60 saniye: anlam doğru mu yanlış mı? ← → tuşlarıyla oyna.' },
+  { id: 'scramble', emoji: '🔀', tone: 't-blue',   title: 'Harf karıştırma', desc: 'Karışık harflerden kelimeyi kur. Türkçe anlamı ipucu.' },
+  { id: 'hangman',  emoji: '🪢', tone: 't-lilac',  title: 'Adam asmaca',     desc: 'Harf harf tahmin et, 6 hatada adam asılır.' }
 ]
 
 const SCREENS = { match: MatchGame, memory: Memory, quick: QuickGame, scramble: Scramble, hangman: Hangman }
@@ -745,23 +747,23 @@ function Games() {
 
   return (
     <div className="page">
-      <h2 className="page-title">🎮 Kelime Oyunları</h2>
-
-      <p className="muted">Kelimeler nereden gelsin?</p>
-      <div className="chip-row">
-        {SOURCES.map(s => (
-          <button key={s.id} className={`chip ${source === s.id ? 'active' : ''}`} onClick={() => setSource(s.id)}>
-            {s.label}
-          </button>
-        ))}
-      </div>
+      <PageHeader icon="ti-puzzle" tone="t-peach" title="Kelime Oyunları" subtitle="Oynarken öğren. Kelimeler nereden gelsin?">
+        <div className="chip-row">
+          {SOURCES.map(s => (
+            <button key={s.id} className={`chip ${source === s.id ? 'active' : ''}`} onClick={() => setSource(s.id)}>
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </PageHeader>
 
       <div className="game-grid">
         {GAMES.map(g => (
-          <button key={g.id} className="game-card panel" onClick={() => setGame(g.id)}>
+          <button key={g.id} className={`game-card panel ${g.tone}`} onClick={() => setGame(g.id)}>
             <span className="game-emoji">{g.emoji}</span>
             <b>{g.title}</b>
             <span className="muted small">{g.desc}</span>
+            <span className="game-play">Oyna <i className="ti ti-arrow-right" aria-hidden="true" /></span>
           </button>
         ))}
       </div>

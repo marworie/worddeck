@@ -15,6 +15,7 @@ import QuizCard, { QuizInfo } from './QuizCard'
 import Badges from './Badges'
 import { checkNewBadges } from './badgeNotify'
 import { useToast } from './ToastContext'
+import PageHeader from './PageHeader'
 
 // Sayfalar ilk açıldıklarında indirilir (ilk yükleme hızlansın)
 const Levels = lazy(() => import('./Levels'))
@@ -167,7 +168,7 @@ function App() {
 
             {view === 'quizSetup' && (
               <div className="page quiz-setup">
-                <h2 className="page-title">Sınav</h2>
+                <PageHeader icon="ti-checklist" tone="t-blue" title="Sınav" subtitle="Çalıştığın kelimelerden karışık sorularla kendini test et" />                
                 <QuizCard onStart={(level, count, sections) => startQuiz({ level, count, sections })} />
                 <QuizInfo onNavigate={navigate} />
               </div>
