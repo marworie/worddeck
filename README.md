@@ -1,4 +1,5 @@
 # 🃏 WordDeck
+🌐 Canlı: https://worddeck.runasp.net
 
 A1'den C1'e İngilizce kelime öğrenme uygulaması. Aralıklı tekrar (Leitner) ile kelime kartları, seviye testi, temalar, bölümlü sınavlar, hikaye okuma, dikte, kelime oyunları, rozetler ve sıralı bir öğrenme yolu içerir. Telefona uygulama olarak kurulabilir (PWA).
 
