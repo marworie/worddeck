@@ -51,7 +51,7 @@ function Sidebar({ view, onNavigate, onLogout }) {
 
   return (
     <>
-      <aside className="sidebar">
+      <aside className="sidebar" data-lenis-prevent>
         <div className="sidebar-logo" onClick={() => go('home')}>
           <span className="logo-mark">W</span>
           <span className="logo-text">WordDeck</span>

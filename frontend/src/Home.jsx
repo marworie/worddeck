@@ -1,7 +1,8 @@
 // ============================================================
 // Home.jsx
-// Ana sayfa: kısa karşılama, tek ana eylem (bugünkü çalışma), günün kelimesi,
-// seviye yolculuğu ve küçük kısayollar. Panel değil, öğrenmenin başladığı yer.
+// Ana sayfa: karşılama, bugünkü çalışma (hero kart), pastel istatistik
+// kutucukları, günün kelimesi, hızlı pratik, devam et kartları ve
+// seviye yolculuğu.
 // ============================================================
 
 import { useEffect, useState } from 'react'
@@ -19,7 +20,7 @@ function highlight(sentence, headword) {
     i % 2 === 1 ? <b key={i}>{part}</b> : <span key={i}>{part}</span>)
 }
 
-function Home({ onStartStudy, onNavigate, onOpenStory}) {
+function Home({ onStartStudy, onNavigate, onOpenStory }) {
   const [progress, setProgress] = useState(null)
   const [home, setHome] = useState(null)
   const [details, setDetails] = useState(null)   // günün kelimesinin okunuşu ve örnek çevirisi
@@ -55,38 +56,82 @@ function Home({ onStartStudy, onNavigate, onOpenStory}) {
 
   const word = home.wordOfDay
   const currentIndex = LEVELS.indexOf(home.currentLevel)
+  const quizPct = lastQuiz ? Math.round((lastQuiz.correctAnswers / lastQuiz.totalQuestions) * 100) : null
+
+  // Hızlı pratik kutucukları: renk sınıfı, ikon, ad, sayfa, küçük bilgi
+  const quick = [
+    { tone: 't-peach', icon: 'ti-puzzle', label: 'Oyunlar', view: 'games' },
+    { tone: 't-lilac', icon: 'ti-headphones', label: 'Dikte', view: 'dictation' },
+    { tone: 't-pink', icon: 'ti-pencil', label: 'Cümle kur', view: 'sentence' },
+    { tone: 't-blue', icon: 'ti-book', label: 'Okuma', view: 'library' },
+    { tone: 't-red', icon: 'ti-flame', label: 'Zorlandıklarım', view: 'hard', info: hard ? `${hard.hardCount} kelime` : null },
+    { tone: 't-teal', icon: 'ti-checklist', label: 'Sınav', view: 'quizSetup', info: quizPct != null ? `son: %${quizPct}` : null }
+  ]
 
   return (
     <div className="home">
-      {/* 1. Kısa karşılama */}
-      <header className="home-greet">
-        <h2>Merhaba, {localStorage.getItem('username')} 👋</h2>
-        <p>Bugün İngilizceni biraz geliştirelim mi?</p>
-        <div className="home-pills">
-          <span>🎯 {progress.todayReviewed} / {progress.dailyGoal} kart</span>
-          <span className="warm">🔥 {progress.streak > 0 ? `${progress.streak} günlük seri` : 'Seriye bugün başla'}</span>
-          <span>📅 Bu hafta {home.daysThisWeek} gün</span>
+      {/* 1. Karşılama */}
+      <header className="home-top">
+        <div>
+          <h2>Merhaba, {localStorage.getItem('username')} 👋</h2>
+          <p>Bugün İngilizceni biraz geliştirelim mi?</p>
         </div>
+        <span className="streak-pill" title="Günlük seri">🔥 {progress.streak}</span>
       </header>
 
-      <div className="home-main">
-        {/* 2. Tek ana eylem */}
-        <section className="today-panel">
-          <span className="today-label">Bugünkü çalışma</span>
-          <ul className="today-items">
-            <li><b>{totalDue}</b> tekrar kartı</li>
-            <li><b>{home.dailyNewWords}</b> yeni kelime <span className="today-level">{startLevel}</span></li>
-          </ul>
-          <button className="today-start" onClick={() => onStartStudy(startLevel)}>
+      {/* 2. Bugünkü çalışma */}
+      <section className="hero">
+        <div className="hero-text">
+          <span className="hero-label">Bugünkü çalışma</span>
+          <h3 className="hero-title">
+            {totalDue} tekrar kartı <span>ve {home.dailyNewWords} yeni {startLevel} kelimesi</span>
+          </h3>
+          <div className="hero-goal">
+            <div className="today-goal"><div style={{ width: `${goalPct}%` }} /></div>
+            <small>Günlük hedef %{Math.round(goalPct)}</small>
+          </div>
+          <button className="hero-btn" onClick={() => onStartStudy(startLevel)}>
             Çalışmaya başla <i className="ti ti-arrow-right" aria-hidden="true" />
           </button>
-          <div className="today-goal">
-            <div style={{ width: `${goalPct}%` }} />
-          </div>
-          <span className="today-goal-text">Günlük hedefin %{Math.round(goalPct)}</span>
-        </section>
+        </div>
 
-        {/* 3. Günün kelimesi */}
+        {/* Süs: üst üste kartlar, en üstte günün kelimesi */}
+        <div className="hero-stack" aria-hidden="true">
+          <div />
+          <div />
+          <div>
+            <b>{word?.headword ?? 'WordDeck'}</b>
+            {word && <small>{word.turkishMeaning}</small>}
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Pastel istatistik kutucukları */}
+      <section className="stat-tiles">
+        <div className="stat-tile t-teal">
+          <i className="ti ti-target" aria-hidden="true" />
+          <b>{progress.todayReviewed}/{progress.dailyGoal}</b>
+          <span>Bugünkü kart</span>
+        </div>
+        <div className="stat-tile t-peach">
+          <i className="ti ti-flame" aria-hidden="true" />
+          <b>{progress.streak}</b>
+          <span>Günlük seri</span>
+        </div>
+        <div className="stat-tile t-blue">
+          <i className="ti ti-calendar-week" aria-hidden="true" />
+          <b>{home.daysThisWeek}</b>
+          <span>Bu hafta çalıştığın gün</span>
+        </div>
+        <div className="stat-tile t-lilac">
+          <i className="ti ti-brain" aria-hidden="true" />
+          <b>{home.knownTotal}</b>
+          <span>Bildiğin kelime</span>
+        </div>
+      </section>
+
+      {/* 4. Günün kelimesi + hızlı pratik */}
+      <div className="home-grid">
         {word ? (
           <section className="wotd panel">
             <span className="wotd-label">Günün kelimesi</span>
@@ -116,11 +161,28 @@ function Home({ onStartStudy, onNavigate, onOpenStory}) {
             <p className="muted">Bugün için uygun kelime bulunamadı, yarın tekrar bak 🙂</p>
           </section>
         )}
+
+        <section className="panel">
+          <div className="card-head">
+            <span className="card-label">Hızlı pratik</span>
+            <span className="muted">Birkaç dakikan mı var?</span>
+          </div>
+          <div className="quick-grid">
+            {quick.map(q => (
+              <button key={q.view} className={`quick-item ${q.tone}`} onClick={() => onNavigate(q.view)}>
+                <i className={`ti ${q.icon}`} aria-hidden="true" />
+                {q.label}
+                {q.info && <small>{q.info}</small>}
+              </button>
+            ))}
+          </div>
+        </section>
       </div>
 
+      {/* 5. Kaldığın yerden devam */}
       <ContinueCards onOpenStory={onOpenStory} onNavigate={onNavigate} />
 
-      {/* 4. Öğrenme yolculuğu */}
+      {/* 6. Öğrenme yolculuğu */}
       <section className="journey panel">
         <div className="journey-head">
           <h3 className="section-title">Öğrenme yolculuğun</h3>
@@ -154,26 +216,7 @@ function Home({ onStartStudy, onNavigate, onOpenStory}) {
         <p className="journey-summary">
           <b>{home.knownTotal}</b> kelimeyi biliyorsun · <b>{home.learnedTotal}</b> kalıcı öğrenildi · <b>{home.studyingTotal}</b> öğreniliyor
         </p>
-        
       </section>
-
-      {/* 5. Küçük kısayollar */}
-      <nav className="home-shortcuts">
-        <button onClick={() => onNavigate('hard')}>
-          <i className="ti ti-flame" aria-hidden="true" /> Zorlandıklarım
-          {hard && <span className="muted small">{hard.hardCount}</span>}
-        </button>
-        <button onClick={() => onNavigate('quizSetup')}>
-          <i className="ti ti-checklist" aria-hidden="true" /> Sınav
-          {lastQuiz && <span className="muted small">%{Math.round((lastQuiz.correctAnswers / lastQuiz.totalQuestions) * 100)}</span>}
-        </button>
-        <button onClick={() => onNavigate('themes')}>
-          <i className="ti ti-category" aria-hidden="true" /> Temalar
-        </button>
-        <button onClick={() => onNavigate('stats')}>
-          <i className="ti ti-chart-bar" aria-hidden="true" /> İstatistikler
-        </button>
-      </nav>
     </div>
   )
 }
