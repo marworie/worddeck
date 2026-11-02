@@ -16,15 +16,21 @@ namespace WordDeck.Controllers
         private readonly IStoryRepository _stories;
         private readonly IReaderRepository _reader;
         private readonly IHttpClientFactory _http;
+        private readonly IConfiguration _config;
 
-        public StoriesController(IStoryRepository stories, IReaderRepository reader, IHttpClientFactory http)
+        public StoriesController(IStoryRepository stories, IReaderRepository reader, IHttpClientFactory http, IConfiguration config)
         {
             _stories = stories;
             _reader = reader;
             _http = http;
+            _config = config;
         }
 
         private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        // Hikaye ekleme / seviye yenileme sadece yönetici kullanıcıya açık (appsettings: AdminUser)
+        private bool IsAdmin() =>
+            string.Equals(User.Identity?.Name, _config["AdminUser"], StringComparison.OrdinalIgnoreCase);
 
         // GET api/Stories
         [HttpGet]
@@ -63,10 +69,11 @@ namespace WordDeck.Controllers
             return NoContent();
         }
 
-        // POST api/Stories/import
+        // POST api/Stories/import  (sadece yönetici)
         [HttpPost("import")]
         public async Task<IActionResult> Import([FromBody] StoryImportRequest req)
         {
+            if (!IsAdmin()) return Forbid();
             if (string.IsNullOrWhiteSpace(req.Title)) return BadRequest("Başlık gerekli");
             if (await _stories.TitleExistsAsync(req.Title)) return Conflict("Bu hikaye zaten ekli");
 
@@ -121,23 +128,25 @@ namespace WordDeck.Controllers
 
         // POST api/Stories/relevel            → sadece önizleme: hangi hikaye hangi seviyeye geçer
         // POST api/Stories/relevel?apply=true → değişiklikleri kaydeder
-        // Kendi yazdığımız hikayeler (Author = WordDeck) seviyesi elle verildiği için atlanır.
+        // Kendi yazdığımız hikayeler (Author = WordDeck) seviyesi elle verildiği için atlanır. (sadece yönetici)
         [HttpPost("relevel")]
         public async Task<IActionResult> Relevel([FromQuery] bool apply = false)
         {
+            if (!IsAdmin()) return Forbid();
+
             var result = new List<object>();
 
             foreach (var s in await _stories.GetAllRowsAsync())
             {
                 if (s.Author == "WordDeck") continue;
 
-                var level = await EstimateLevelAsync(s.Body);
+                var (known, unknown) = await WordLevelsAsync(s.Body);
+                var level = StoryRules.EstimateLevel(known, unknown);
                 int pageCount = StoryRules.Paginate(s.Body, StoryRules.WordsPerPage(level)).Count;
 
                 if (apply && level != s.Level)
                     await _stories.UpdateLevelAsync(s.Id, level, pageCount);
 
-                var (known, unknown) = await WordLevelsAsync(s.Body);
                 result.Add(new
                 {
                     s.Title,
