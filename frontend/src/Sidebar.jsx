@@ -10,7 +10,6 @@ import { useState } from 'react'
 const NAV = [
   { view: 'home', icon: 'ti-home', label: 'Ana sayfa', mobile: true },
   { view: 'levels', icon: 'ti-cards', label: 'Kart çalış', short: 'Çalış', mobile: true },
-  { view: 'path', icon: 'ti-route', label: 'Öğrenme yolu' },
   { view: 'hard', icon: 'ti-flame', label: 'Zorlandıklarım' },
   { view: 'quizSetup', icon: 'ti-checklist', label: 'Sınav', mobile: true },
   { view: 'games', icon: 'ti-puzzle', label: 'Oyunlar', mobile: true },
