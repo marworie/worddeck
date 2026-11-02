@@ -36,7 +36,7 @@ function MatchGame({ source, onBack }) {
   const [wrong, setWrong] = useState(null) // { l, r }: kısa süre kırmızı yanar
   const [mistakes, setMistakes] = useState(0)
   const [startedAt, setStartedAt] = useState(null)
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState(() => Date.now())
   const [best, setBest] = useState(loadBest)
   const [newRecord, setNewRecord] = useState(false)
 

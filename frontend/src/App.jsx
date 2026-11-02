@@ -12,7 +12,8 @@ import Login from './Login'
 import Sidebar from './Sidebar'
 import Home from './Home'
 import QuizCard, { QuizInfo } from './QuizCard'
-import Badges, { checkNewBadges } from './Badges'
+import Badges from './Badges'
+import { checkNewBadges } from './badgeNotify'
 import { useToast } from './ToastContext'
 
 // Sayfalar ilk açıldıklarında indirilir (ilk yükleme hızlansın)
