@@ -36,6 +36,17 @@ const LoginIntro = lazy(() => import('./LoginIntro'))
 const Dictation = lazy(() => import('./Dictation'))
 const Games = lazy(() => import('./Games'))
 
+// Her sayfanın bölüm rengi (başlık ve üstteki renkli parıltı bu renkte olur)
+const SECTION_COLOR = {
+  home: '#0d9488', levels: '#0d9488', study: '#0d9488',
+  hard: '#ef4444', hardPractice: '#ef4444',
+  quizSetup: '#3b82f6', quiz: '#3b82f6', placement: '#3b82f6', path: '#3b82f6',
+  games: '#f97316', sentence: '#ec4899', dictation: '#a855f7',
+  library: '#7c3aed', reader: '#7c3aed', search: '#0ea5e9', themes: '#22c55e',
+  badges: '#eab308', notebook: '#d97706', stats: '#6366f1',
+  phonetics: '#64748b', settings: '#64748b'
+}
+
 function App() {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches   // Sistem ayarlarında "hareketi azalt" açık olanlara yumuşak kaydırma uygulanmasın
   const showToast = useToast()
@@ -132,8 +143,8 @@ function App() {
           </button>
         </header>
 
-        <main className="app-main">
-          {/* Lazy sayfanın kodu inene kadar "Yükleniyor..." görünür */}
+        <main className="app-main" style={{ '--section': SECTION_COLOR[view] ?? '#0d9488' }}>
+         {/* Lazy sayfanın kodu inene kadar "Yükleniyor..." görünür */}
           <Suspense fallback={<div className="panel">Yükleniyor...</div>}>
             {view === 'home' && (
               <Home
