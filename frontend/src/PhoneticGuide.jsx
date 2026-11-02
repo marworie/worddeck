@@ -6,13 +6,13 @@
 
 import { PHONETIC_GROUPS, ipaToTurkish } from './phonetics'
 import { speak } from './preferences'
+import PageHeader from './PageHeader'
 
 function PhoneticGuide({ onBack }) {
   return (
     <div className="guide-page">
       <button className="btn btn-ghost back-btn" onClick={onBack}>← Ana sayfa</button>
-      <h2 className="page-title">Fonetik Rehberi</h2>
-
+      <PageHeader icon="ti-language" tone="t-blue" title="Fonetik rehberi" subtitle="IPA sembolleri ve Türkçe okunuşları" />
       <section className="panel guide-intro">
         <p>
           Kartlarda kelimenin altında <b>/əˈbɪl.ə.ti/</b> gibi bir yazı görürsün. Bu, kelimenin

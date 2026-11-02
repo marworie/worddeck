@@ -11,6 +11,7 @@ import {
 import { Bar, Line } from 'react-chartjs-2'
 import { apiFetch } from './api'
 import { posTr } from './labels'
+import PageHeader from './PageHeader'
 
 // Chart.js'te sadece kullandığımız parçaları kaydediyoruz (paket küçük kalsın)
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Filler)
@@ -47,7 +48,7 @@ function Stats() {
 
   return (
     <div className="page stats-page">
-      <h2 className="page-title">İstatistikler</h2>
+      <PageHeader icon="ti-chart-bar" tone="t-lilac" title="İstatistikler" subtitle="İlerlemen, serin ve en çok unuttuğun kelimeler" />
 
       {/* Özet kartlar */}
       <div className="stats-cards">

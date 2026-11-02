@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
 import { useToast } from './ToastContext'
 import { getPrefs, setPref, speak } from './preferences'
+import PageHeader from './PageHeader'
 
 const GOALS = [10, 20, 30, 50]
 const NEW_WORDS = [5, 10, 20, 30]
@@ -55,7 +56,7 @@ function Settings({ onBack }) {
   return (
     <div className="settings-page">
       <button className="btn btn-ghost back-btn" onClick={onBack}>← Ana sayfa</button>
-      <h2 className="page-title">Ayarlar</h2>
+      <PageHeader icon="ti-settings" tone="t-teal" title="Ayarlar" subtitle="Günlük hedef, ses ve görünüm" />
 
       <section className="panel settings-section">
         <h3 className="section-title">Çalışma</h3>

@@ -7,6 +7,7 @@
 
 import { useState } from 'react'
 import { apiFetch } from './api'
+import PageHeader from './PageHeader'
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1']
 
@@ -106,7 +107,7 @@ function PlacementTest({ onExit, onStartLevel }) {
   if (phase === 'intro') {
     return (
       <div className="placement panel">
-        <h2>Seviyeni bulalım</h2>
+        <PageHeader icon="ti-target" tone="t-blue" title="Seviye testi" subtitle="Hangi seviyeden başlaman gerektiğini bulalım" />
         <p>A1'den başlayarak her seviyeden 5 soru gelecek. Bir seviyede 4 ya da daha fazla doğru yaparsan bir üst seviyeye geçersin.</p>
         <p className="muted">Emin değilsen tahmin etme, <b>Bilmiyorum</b>'u seç: sonuç daha doğru çıkar.</p>
         <div className="placement-actions">

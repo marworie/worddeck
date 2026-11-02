@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
 import { posTr } from './labels'
+import PageHeader from './PageHeader'
 
 const COUNT = 5
 
@@ -88,7 +89,7 @@ function SentencePractice({ onExit }) {
     const firstTry = scores.filter(s => s.firstTry).length
     return (
       <div className="page sentence-page">
-        <h2 className="page-title">✍️ Tebrikler!</h2>
+        <PageHeader icon="ti-pencil" tone="t-pink" title="Cümle kur" subtitle="Kelimeyle kendi cümleni yaz, dilbilgisi kontrol edilsin" />
         <p>{words.length} kelimeyle cümle kurdun, <b>{firstTry}</b> tanesini ilk denemede doğru yazdın.</p>
         <ul className="sentence-summary">
           {scores.map(s => (

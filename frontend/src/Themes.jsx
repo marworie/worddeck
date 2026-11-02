@@ -9,6 +9,7 @@ import { apiFetch } from './api'
 import { posTr } from './labels'
 import { useToast } from './ToastContext'
 import WordDetailModal from './WordDetailModal'
+import PageHeader from './PageHeader'
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1']
 const LEARNED_BOX = 6   // backend'deki LeitnerService.LearnedBox ile aynı
@@ -55,7 +56,7 @@ function ThemeDetail({ theme, onBack, onStartQuiz }) {
   return (
     <div className="page">
       <button className="btn btn-ghost back-btn" onClick={onBack}>← Temalar</button>
-      <h2 className="page-title">{theme.icon} {theme.name}</h2>
+      <PageHeader icon="ti-category" tone="t-teal" title="Temalar" subtitle="Konulara göre kelime listeleri ve sınavları" />
 
       {/* Seviye filtresi: sadece temada olan seviyeler */}
       <div className="chip-list theme-levels">

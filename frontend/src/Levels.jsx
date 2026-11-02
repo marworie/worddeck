@@ -14,9 +14,7 @@ function Levels({ onStartStudy }) {
   return (
     <div className="page">
       <PageHeader icon="ti-cards" tone="t-teal" title="Kart çalış" subtitle="Bir seviye seç: tekrar zamanı gelen kartlar ve yeni kelimeler birlikte gelir." />
-      <section className="panel">
-        {levels ? <LevelList levels={levels} onStartStudy={onStartStudy} /> : <p className="loading-text">Yükleniyor...</p>}
-      </section>
+      {levels ? <LevelList levels={levels} onStartStudy={onStartStudy} /> : <p className="loading-text">Yükleniyor...</p>}
     </div>
   )
 }

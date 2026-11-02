@@ -3101,3 +3101,53 @@ h1, h2, h3, .page-title { letter-spacing: -0.5px; }
 @media (max-width: 600px) {
   .level-picks { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ---------- Kart çalış: seviye kartları ---------- */
+.level-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
+.level-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 22px;
+  border: none;
+  border-radius: 24px;
+  background: var(--tile-bg);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .2s;
+}
+.level-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+.level-card:active { transform: scale(.98); }
+.level-card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.level-card-code { font-size: 36px; font-weight: 800; line-height: 1; color: var(--tile-fg); }
+.level-card-due {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--tile-fg);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.level-card-name { font-size: 17px; font-weight: 800; margin-bottom: 8px; }
+.level-card-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--tile-fg) 15%, transparent);
+}
+.level-card-bar .learned { background: var(--tile-fg); }
+.level-card-bar .learning { background: color-mix(in srgb, var(--tile-fg) 40%, transparent); }
+.level-card-count { font-size: 13px; font-weight: 600; color: var(--muted); }
+.level-card-go {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  color: var(--tile-fg);
+}

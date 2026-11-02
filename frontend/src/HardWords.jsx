@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
 import { HARD_STATES, QUESTION_TYPES_TR, posTr } from './labels'
 import WordDetailModal from './WordDetailModal'
+import PageHeader from './PageHeader'
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1']
 
@@ -54,7 +55,7 @@ function HardWords({ onStartPractice, onBack }) {
   return (
     <div className="hard-page">
     <button className="btn btn-ghost back-btn" onClick={onBack}>← Ana sayfa</button>
-      <h2 className="page-title">Zorlandıklarım</h2>
+      <PageHeader icon="ti-flame" tone="t-red" title="Zorlandıklarım" subtitle="En çok zorlandığın kelimeler: tekrar et, güçlendir" />
 
       {insights && <InsightsPanel insights={insights} />}
 

@@ -1,32 +1,33 @@
 // ============================================================
 // LevelList.jsx
-// Seviyelerin kompakt listesi (ana sayfada ve "Kart çalış" sayfasında).
+// Seviye kartları ("Kart çalış" sayfası): her seviyenin kendi pastel rengi,
+// ilerleme çubuğu, bugünkü tekrar sayısı. Karta tıklayınca çalışma başlar.
 // ============================================================
 
-const LEVEL_INFO = { A1: 'Başlangıç', A2: 'Temel', B1: 'Orta', B2: 'Orta üstü', C1: 'İleri' }
+import { LEVEL_NAME, LEVEL_TONE } from './labels'
 
 function LevelList({ levels, onStartStudy }) {
   return (
-    <div className="level-list">
+    <div className="level-cards">
       {levels.map(l => {
         const learnedPct = (l.learned / l.total) * 100
         const learningPct = (l.learning / l.total) * 100
         return (
-          <div key={l.level} className="level-list-row">
-            <span className="level-badge">{l.level}</span>
-            <div className="level-list-info">
-              <div className="level-list-top">
-                <b>{LEVEL_INFO[l.level]}</b>
-                <span className="muted small">{l.learned + l.learning} / {l.total}</span>
-              </div>
-              <div className="level-bar">
-                <div className="level-bar-learned" style={{ width: `${learnedPct}%` }} />
-                <div className="level-bar-learning" style={{ width: `${learningPct}%` }} />
-              </div>
+          <button key={l.level} className={`level-card ${LEVEL_TONE[l.level]}`} onClick={() => onStartStudy(l.level)}>
+            <div className="level-card-top">
+              <b className="level-card-code">{l.level}</b>
+              {l.dueToday > 0 && <span className="level-card-due">🔁 {l.dueToday} tekrar</span>}
             </div>
-            {l.dueToday > 0 ? <span className="due-badge">{l.dueToday} tekrar</span> : <span />}
-            <button className="btn btn-secondary" onClick={() => onStartStudy(l.level)}>Çalış</button>
-          </div>
+            <span className="level-card-name">{LEVEL_NAME[l.level]}</span>
+
+            <div className="level-card-bar">
+              <div className="learned" style={{ width: `${learnedPct}%` }} />
+              <div className="learning" style={{ width: `${learningPct}%` }} />
+            </div>
+            <span className="level-card-count">{l.learned + l.learning} / {l.total} kelime</span>
+
+            <span className="level-card-go">Çalış <i className="ti ti-arrow-right" aria-hidden="true" /></span>
+          </button>
         )
       })}
     </div>

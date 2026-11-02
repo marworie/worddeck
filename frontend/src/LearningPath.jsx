@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
 import { posTr } from './labels'
 import { useToast } from './ToastContext'
+import PageHeader from './PageHeader'
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1']
 const LEVEL_KEY = 'pathLevel'
@@ -48,7 +49,12 @@ function UnitDetail({ level, unit, onBack, onStartTest }) {
   return (
     <div className="page">
       <button className="btn btn-ghost back-btn" onClick={onBack}>← {level} yolu</button>
-      <h2 className="page-title">{unit.icon} {unitTitle(unit)} <span className="level-badge">{level}</span></h2>
+      <PageHeader
+        icon="ti-map"
+        tone="t-blue"
+        title={unit.partCount > 1 ? `${unit.name} ${unit.part}` : unit.name}
+        subtitle={`${level} öğrenme yolu`}
+      />
       <p className="muted">
         {detail.words.length} kelime
         {unit.bestScore != null && ` · en iyi puanın %${unit.bestScore}`}
@@ -114,7 +120,7 @@ function LearningPath({ onStartTest }) {
 
   return (
     <div className="page learning-path">
-      <h2 className="page-title">🗺️ Öğrenme yolu</h2>
+      <PageHeader icon="ti-map" tone="t-blue" title="Öğrenme yolu" subtitle="Ünite ünite ilerle, testi geçince sıradaki açılır" />
 
       <div className="chip-list">
         {LEVELS.map(l => (
