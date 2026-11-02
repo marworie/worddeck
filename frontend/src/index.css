@@ -3151,3 +3151,16 @@ h1, h2, h3, .page-title { letter-spacing: -0.5px; }
   font-weight: 800;
   color: var(--tile-fg);
 }
+
+/* Telefon: alt menü çubuğu düzeltmesi */
+@media (max-width: 768px) {
+  .sidebar {
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    border-right: none;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+  }
+  .sidebar-logo { display: none; }
+  .sidebar-nav { gap: 0; }
+  .nav-item { min-width: 0; }
+  .nav-short { white-space: nowrap; font-size: 10.5px; }
+}
