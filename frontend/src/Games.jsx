@@ -329,13 +329,419 @@ function Hangman({ source, onBack }) {
   )
 }
 
+// ---------- Ortak: oyun rekorları (oyun + kaynak başına) ----------
+function getBest(key, source) {
+  try { return (JSON.parse(localStorage.getItem(key)) ?? {})[source] ?? null } catch { return null }
+}
+
+function setBestValue(key, source, value) {
+  try {
+    const all = JSON.parse(localStorage.getItem(key)) ?? {}
+    localStorage.setItem(key, JSON.stringify({ ...all, [source]: value }))
+  } catch { /* önemli değil */ }
+}
+
+function NotEnough({ onBack }) {
+  return (
+    <div className="panel">
+      Bu kaynakta yeterli kelime yok. Önce birkaç kelime çalış ya da bir seviye seç.
+      <div><button className="btn btn-ghost" onClick={onBack}>← Geri</button></div>
+    </div>
+  )
+}
+
+// ---------- Hafıza kartları ----------
+function Memory({ source, onBack }) {
+  const [cards, setCards] = useState(null)       // { key, wordId, text, lang }
+  const [open, setOpen] = useState([])           // açık duran (henüz eşleşmemiş) kartlar, en fazla 2
+  const [matched, setMatched] = useState(new Set())
+  const [moves, setMoves] = useState(0)
+  const [best, setBest] = useState(() => getBest('memoryBest', source))
+  const [newRecord, setNewRecord] = useState(false)
+
+  const done = cards && cards.length > 0 && matched.size === cards.length / 2
+
+  function load() {
+    setCards(null)
+    setOpen([])
+    setMatched(new Set())
+    setMoves(0)
+    setNewRecord(false)
+    apiFetch(`/api/Games/words?source=${source}&count=${PAIRS}`)
+      .then(r => (r.ok ? r.json() : []))
+      .then(list => setCards(shuffle(list.flatMap(p => [
+        { key: `${p.wordId}-en`, wordId: p.wordId, text: p.headword, lang: 'en' },
+        { key: `${p.wordId}-tr`, wordId: p.wordId, text: p.meaning, lang: 'tr' }
+      ]))))
+  }
+
+  useEffect(load, [source])   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Bitince rekor: daha az hamle daha iyi
+  useEffect(() => {
+    if (!done) return
+    if (best == null || moves < best) {
+      setBest(moves)
+      setBestValue('memoryBest', source, moves)
+      setNewRecord(true)
+    }
+  }, [done])   // eslint-disable-line react-hooks/exhaustive-deps
+
+  function flip(card) {
+    if (open.length === 2 || open.includes(card.key) || matched.has(card.wordId)) return
+    if (card.lang === 'en') speakWord(card.text)
+
+    const next = [...open, card.key]
+    setOpen(next)
+    if (next.length < 2) return
+
+    setMoves(m => m + 1)
+    const [a, b] = next.map(k => cards.find(c => c.key === k))
+    if (a.wordId === b.wordId) {
+      setMatched(m => new Set(m).add(a.wordId))
+      setOpen([])
+    } else {
+      setTimeout(() => setOpen([]), 900)   // yanlışsa kısa süre görünür, sonra kapanır
+    }
+  }
+
+  if (!cards) return <div className="panel">Yükleniyor...</div>
+  if (cards.length < 4) return <NotEnough onBack={onBack} />
+
+  return (
+    <div className="page">
+      <div className="dict-head">
+        <button className="btn btn-ghost" onClick={onBack}>← Oyunlar</button>
+        <span className="muted small">
+          🔄 {moves} hamle{best != null && ` · 🏆 rekor ${best} hamle`}
+        </span>
+      </div>
+
+      {done ? (
+        <div className="panel dict-summary">
+          <div className="dict-big">{newRecord ? '🏆' : '🧠'}</div>
+          <h2>{moves} hamlede bitirdin</h2>
+          <p className="muted">En iyi ihtimal {cards.length / 2} hamle {newRecord && '· Yeni rekor!'}</p>
+          <div className="dict-actions" style={{ justifyContent: 'center' }}>
+            <button className="btn btn-primary" onClick={load}>Tekrar oyna</button>
+            <button className="btn btn-ghost" onClick={onBack}>Oyunlar</button>
+          </div>
+        </div>
+      ) : (
+        <div className="memory-grid">
+          {cards.map(c => {
+            const shown = open.includes(c.key) || matched.has(c.wordId)
+            return (
+              <button
+                key={c.key}
+                className={`memory-card ${shown ? 'shown' : ''} ${matched.has(c.wordId) ? 'matched' : ''} ${c.lang}`}
+                onClick={() => flip(c)}
+              >
+                <span className="memory-inner">
+                  <span className="memory-front">?</span>
+                  <span className="memory-back">{c.text}</span>
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------- Hızlı karar ----------
+const QUICK_SECONDS = 60
+
+// Yarı yarıya doğru anlam ya da başka bir kelimenin anlamı
+function makeQuestion(list, prev) {
+  let w
+  do { w = list[Math.floor(Math.random() * list.length)] } while (list.length > 1 && w.headword === prev?.word)
+  const truthy = Math.random() < 0.5
+  const others = list.filter(o => o.wordId !== w.wordId)
+  const meaning = truthy ? w.meaning : others[Math.floor(Math.random() * others.length)].meaning
+  return { word: w.headword, meaning, truthy }
+}
+
+function QuickGame({ source, onBack }) {
+  const [list, setList] = useState(null)
+  const [q, setQ] = useState(null)
+  const [score, setScore] = useState(0)
+  const [wrongs, setWrongs] = useState(0)
+  const [left, setLeft] = useState(QUICK_SECONDS)
+  const [running, setRunning] = useState(false)
+  const [flash, setFlash] = useState(null)   // 'ok' | 'bad'
+  const [best, setBest] = useState(() => getBest('quickBest', source))
+  const [newRecord, setNewRecord] = useState(false)
+
+  function load() {
+    setList(null)
+    setRunning(false)
+    apiFetch(`/api/Games/words?source=${source}&count=20`)
+      .then(r => (r.ok ? r.json() : []))
+      .then(data => {
+        setList(data)
+        if (data.length < 4) return
+        setQ(makeQuestion(data))
+        setScore(0)
+        setWrongs(0)
+        setLeft(QUICK_SECONDS)
+        setNewRecord(false)
+        setRunning(true)
+      })
+  }
+
+  useEffect(load, [source])   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Geri sayım
+  useEffect(() => {
+    if (!running) return
+    const t = setInterval(() => setLeft(s => s - 1), 1000)
+    return () => clearInterval(t)
+  }, [running])
+
+  // Süre bitti: rekor kontrolü
+  useEffect(() => {
+    if (!running || left > 0) return
+    setRunning(false)
+    if (best == null || score > best) {
+      setBest(score)
+      setBestValue('quickBest', source, score)
+      setNewRecord(true)
+    }
+  }, [left])   // eslint-disable-line react-hooks/exhaustive-deps
+
+  function answer(saysTrue) {
+    if (!running) return
+    const correct = saysTrue === q.truthy
+    if (correct) setScore(s => s + 1)
+    else setWrongs(w => w + 1)
+    setFlash(correct ? 'ok' : 'bad')
+    setTimeout(() => setFlash(null), 250)
+    setQ(prev => makeQuestion(list, prev))
+  }
+
+  // ← yanlış, → doğru
+  useEffect(() => {
+    const onKey = e => {
+      if (e.key === 'ArrowLeft') answer(false)
+      if (e.key === 'ArrowRight') answer(true)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
+  if (!list) return <div className="panel">Yükleniyor...</div>
+  if (list.length < 4) return <NotEnough onBack={onBack} />
+
+  return (
+    <div className="page">
+      <div className="dict-head">
+        <button className="btn btn-ghost" onClick={onBack}>← Oyunlar</button>
+        <span className="muted small">✅ {score} · ❌ {wrongs}{best != null && ` · 🏆 rekor ${best}`}</span>
+      </div>
+
+      {running ? (
+        <div className={`panel quick-card ${flash ?? ''}`}>
+          <div className="quick-timer"><span style={{ width: `${(left / QUICK_SECONDS) * 100}%` }} /></div>
+          <span className="muted small">⏱️ {left} sn</span>
+          <div className="quick-word">{q.word}</div>
+          <div className="quick-eq">=</div>
+          <div className="quick-meaning">{q.meaning}</div>
+          <div className="quick-buttons">
+            <button className="btn quick-no" onClick={() => answer(false)}>✗ Yanlış <span className="desktop-hint">←</span></button>
+            <button className="btn quick-yes" onClick={() => answer(true)}>✓ Doğru <span className="desktop-hint">→</span></button>
+          </div>
+        </div>
+      ) : (
+        <div className="panel dict-summary">
+          <div className="dict-big">{newRecord ? '🏆' : '⚡'}</div>
+          <h2>{score} doğru</h2>
+          <p className="muted">60 saniyede {score + wrongs} cevap, {wrongs} yanlış {newRecord && '· Yeni rekor!'}</p>
+          <div className="dict-actions" style={{ justifyContent: 'center' }}>
+            <button className="btn btn-primary" onClick={load}>Tekrar oyna</button>
+            <button className="btn btn-ghost" onClick={onBack}>Oyunlar</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------- Harf karıştırma ----------
+function scrambleLetters(word) {
+  const letters = word.split('')
+  for (let i = 0; i < 10; i++) {
+    const s = shuffle(letters)
+    if (s.join('') !== word) return s   // karışık hali kelimenin kendisi olmasın
+  }
+  return letters
+}
+
+function Scramble({ source, onBack }) {
+  const [words, setWords] = useState(null)
+  const [index, setIndex] = useState(0)
+  const [pool, setPool] = useState([])        // { id, ch }: karışık harfler
+  const [picked, setPicked] = useState([])    // seçilen harflerin id'leri (sırasıyla)
+  const [status, setStatus] = useState(null)  // 'right' | 'wrong' | 'skip'
+  const [solved, setSolved] = useState(0)
+
+  const current = words?.[index]
+  const answer = current?.headword.toLowerCase() ?? ''
+  const locked = status === 'right' || status === 'skip'
+  const finished = words && index >= words.length
+
+  function load() {
+    setWords(null)
+    setIndex(0)
+    setSolved(0)
+    apiFetch(`/api/Games/words?source=${source}&count=20`)
+      .then(r => (r.ok ? r.json() : []))
+      .then(list => setWords(list.filter(w => /^[a-z]{3,10}$/i.test(w.headword)).slice(0, ROUND)))
+  }
+
+  useEffect(load, [source])   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Yeni kelime: harfleri karıştır
+  useEffect(() => {
+    if (!current) return
+    setPool(scrambleLetters(answer).map((ch, id) => ({ id, ch })))
+    setPicked([])
+    setStatus(null)
+  }, [current])   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Bütün harfler yerleşince kontrol et
+  useEffect(() => {
+    if (!current || picked.length !== answer.length) return
+    if (picked.map(id => pool[id].ch).join('') === answer) {
+      setStatus('right')
+      setSolved(n => n + 1)
+      speakWord(current.headword)
+    } else {
+      setStatus('wrong')
+    }
+  }, [picked])   // eslint-disable-line react-hooks/exhaustive-deps
+
+  function pick(id) {
+    if (locked || picked.includes(id)) return
+    setStatus(null)
+    setPicked(p => [...p, id])
+  }
+
+  function unpick(id) {
+    if (locked) return
+    setStatus(null)
+    setPicked(p => p.filter(x => x !== id))
+  }
+
+  function skip() {
+    setStatus('skip')
+    speakWord(current.headword)
+  }
+
+  // Klavye: harf yazınca o harf seçilir, Backspace son harfi geri alır, Enter sonraki
+  useEffect(() => {
+    const onKey = e => {
+      if (!current) return
+      if (e.key === 'Enter' && locked) { setIndex(i => i + 1); return }
+      if (e.key === 'Backspace' && picked.length) { unpick(picked[picked.length - 1]); return }
+      const k = e.key.toLowerCase()
+      const free = pool.find(p => p.ch === k && !picked.includes(p.id))
+      if (free) pick(free.id)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
+  if (!words) return <div className="panel">Yükleniyor...</div>
+  if (words.length === 0) return <NotEnough onBack={onBack} />
+
+  if (finished) {
+    return (
+      <div className="page">
+        <div className="panel dict-summary">
+          <div className="dict-big">{solved === words.length ? '🏆' : '🔀'}</div>
+          <h2>{solved} / {words.length} kelime</h2>
+          <div className="dict-actions" style={{ justifyContent: 'center' }}>
+            <button className="btn btn-primary" onClick={load}>Tekrar oyna</button>
+            <button className="btn btn-ghost" onClick={onBack}>Oyunlar</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="page">
+      <div className="dict-head">
+        <button className="btn btn-ghost" onClick={onBack}>← Oyunlar</button>
+        <span className="muted small">{index + 1} / {words.length} · ✅ {solved}</span>
+      </div>
+
+      <div className="panel hangman">
+        <p className="muted">🇹🇷 {current.meaning}</p>
+
+        {/* Kurulan kelime: harfe tıklayınca geri gider */}
+        <div className={`scr-slots ${status ?? ''}`}>
+          {answer.split('').map((c, i) => {
+            const id = picked[i]
+            const ch = status === 'skip' ? c : id != null ? pool[id].ch : ''
+            return (
+              <button key={i} className="scr-slot" onClick={() => id != null && unpick(id)} disabled={locked}>
+                {ch}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Karışık harfler */}
+        <div className="hm-keys">
+          {pool.map(p => (
+            <button key={p.id} className="hm-key" disabled={locked || picked.includes(p.id)} onClick={() => pick(p.id)}>
+              {p.ch}
+            </button>
+          ))}
+        </div>
+
+        {status === 'wrong' && <p className="muted small">Olmadı, harflere tıklayıp yerlerini değiştir 🤔</p>}
+
+        <div className="dict-actions" style={{ justifyContent: 'center' }}>
+          {locked ? (
+            <>
+              <b>{status === 'right' ? '🎉 Bildin!' : `Kelime: ${current.headword}`}</b>
+              <button className="btn btn-primary" onClick={() => setIndex(i => i + 1)}>Sonraki →</button>
+            </>
+          ) : (
+            <>
+              <button className="btn btn-ghost" onClick={() => setPicked([])}>Temizle</button>
+              <button className="btn btn-ghost" onClick={skip}>Pas geç</button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ---------- Oyunlar sayfası ----------
+const GAMES = [
+  { id: 'match',    emoji: '🃏', title: 'Eşleştirme',      desc: 'İngilizce kelimeyi Türkçe anlamıyla eşleştir. Ne kadar hızlısın?' },
+  { id: 'memory',   emoji: '🧠', title: 'Hafıza kartları', desc: 'Kartlar kapalı! Kelimeyi ve anlamını hatırlayarak en az hamlede eşleştir.' },
+  { id: 'quick',    emoji: '⚡', title: 'Hızlı karar',     desc: '60 saniye: anlam doğru mu yanlış mı? ← → tuşlarıyla oyna.' },
+  { id: 'scramble', emoji: '🔀', title: 'Harf karıştırma', desc: 'Karışık harflerden kelimeyi kur. Türkçe anlamı ipucu.' },
+  { id: 'hangman',  emoji: '🪢', title: 'Adam asmaca',     desc: 'Harf harf tahmin et, 6 hatada adam asılır.' }
+]
+
+const SCREENS = { match: MatchGame, memory: Memory, quick: QuickGame, scramble: Scramble, hangman: Hangman }
+
 function Games() {
   const [source, setSource] = useState('mine')
   const [game, setGame] = useState(null)
 
-  if (game === 'match') return <MatchGame source={source} onBack={() => setGame(null)} />
-  if (game === 'hangman') return <Hangman source={source} onBack={() => setGame(null)} />
+  if (game) {
+    const Screen = SCREENS[game]
+    return <Screen source={source} onBack={() => setGame(null)} />
+  }
 
   return (
     <div className="page">
@@ -351,16 +757,13 @@ function Games() {
       </div>
 
       <div className="game-grid">
-        <button className="game-card panel" onClick={() => setGame('match')}>
-          <span className="game-emoji">🃏</span>
-          <b>Eşleştirme</b>
-          <span className="muted small">İngilizce kelimeyi Türkçe anlamıyla eşleştir. Ne kadar hızlısın?</span>
-        </button>
-        <button className="game-card panel" onClick={() => setGame('hangman')}>
-          <span className="game-emoji">🪢</span>
-          <b>Adam asmaca</b>
-          <span className="muted small">Harf harf tahmin et, 6 hatada adam asılır. İpucu 1 hak yer.</span>
-        </button>
+        {GAMES.map(g => (
+          <button key={g.id} className="game-card panel" onClick={() => setGame(g.id)}>
+            <span className="game-emoji">{g.emoji}</span>
+            <b>{g.title}</b>
+            <span className="muted small">{g.desc}</span>
+          </button>
+        ))}
       </div>
     </div>
   )

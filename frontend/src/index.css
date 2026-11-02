@@ -2524,3 +2524,36 @@ button {
 .hm-key.hit { background: #dcfce7; color: #166534; }
 .hm-key.miss { background: #fee2e2; color: #991b1b; opacity: .6; }
 .hm-result { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+/* Hafıza kartları */
+.memory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 16px; }
+.memory-card { aspect-ratio: 4 / 3; perspective: 800px; border: none; background: none; padding: 0; cursor: pointer; font: inherit; color: inherit; }
+.memory-inner { position: relative; display: block; width: 100%; height: 100%; transition: transform .4s; transform-style: preserve-3d; }
+.memory-card.shown .memory-inner { transform: rotateY(180deg); }
+.memory-front, .memory-back { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 12px; backface-visibility: hidden; text-align: center; font-weight: 600; }
+.memory-front { background: linear-gradient(135deg, #0d9488, #0f766e); color: #fff; font-size: 28px; }
+.memory-back { background: var(--surface, #fff); border: 2px solid var(--border); transform: rotateY(180deg); font-size: 15px; }
+.memory-card.en .memory-back { color: #0f766e; }
+.memory-card.matched .memory-back { border-color: #16a34a; background: #dcfce7; color: #166534; }
+@media (max-width: 600px) { .memory-grid { grid-template-columns: repeat(3, 1fr); } .memory-back { font-size: 13px; } }
+
+/* Hızlı karar */
+.quick-card { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 16px; text-align: center; transition: background .2s; }
+.quick-card.ok { background: #dcfce7; }
+.quick-card.bad { background: #fee2e2; }
+.quick-timer { width: 100%; height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.quick-timer span { display: block; height: 100%; background: #0d9488; transition: width 1s linear; }
+.quick-word { font-size: 36px; font-weight: 700; margin-top: 10px; }
+.quick-eq { opacity: .5; }
+.quick-meaning { font-size: 24px; }
+.quick-buttons { display: flex; gap: 12px; margin-top: 12px; }
+.quick-buttons .btn { min-width: 130px; font-size: 17px; padding: 12px 18px; color: #fff; }
+.quick-no { background: #dc2626; }
+.quick-yes { background: #16a34a; }
+
+/* Harf karıştırma */
+.scr-slots { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.scr-slot { width: 42px; height: 50px; border-radius: 10px; border: 2px dashed var(--border); background: transparent; color: inherit; font: inherit; font-size: 24px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
+.scr-slots.right .scr-slot { border: 2px solid #16a34a; background: #dcfce7; color: #166534; }
+.scr-slots.wrong .scr-slot { border: 2px solid #dc2626; background: #fee2e2; color: #991b1b; animation: shake .3s; }
+.scr-slots.skip .scr-slot { border-style: solid; color: #92400e; }
