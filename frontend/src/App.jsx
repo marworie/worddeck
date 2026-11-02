@@ -2,36 +2,39 @@
 // App.jsx
 // Giriş durumu, hangi sayfanın açık olduğu ve genel yerleşim:
 // solda menü, üstte arama çubuğu, ortada sayfa.
+// Sayfalar lazy yüklenir: kodları ilk açıldıklarında indirilir.
 // ============================================================
 
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
+import { ReactLenis } from 'lenis/react'
+import 'lenis/dist/lenis.css'
 import Login from './Login'
 import Sidebar from './Sidebar'
 import Home from './Home'
-import Levels from './Levels'
-import StudySession from './StudySession'
-import HardWords from './HardWords'
-import HardPractice from './HardPractice'
 import QuizCard, { QuizInfo } from './QuizCard'
-import Quiz from './Quiz'
-import Search from './Search'
-import Notebook from './Notebook'
-import PhoneticGuide from './PhoneticGuide'
-import Settings from './Settings'
-import { useToast } from './ToastContext'
-import Stats from './Stats'
-import PlacementTest from './PlacementTest'
-import Themes from './Themes'
-import Library from './Library'
-import Reader from './Reader'
-import SentencePractice from './SentencePractice'
-import LearningPath from './LearningPath'
-import LoginIntro from './LoginIntro'
-import { ReactLenis } from 'lenis/react'
-import 'lenis/dist/lenis.css'
-import Dictation from './Dictation'
 import Badges, { checkNewBadges } from './Badges'
-import Games from './Games'
+import { useToast } from './ToastContext'
+
+// Sayfalar ilk açıldıklarında indirilir (ilk yükleme hızlansın)
+const Levels = lazy(() => import('./Levels'))
+const StudySession = lazy(() => import('./StudySession'))
+const HardWords = lazy(() => import('./HardWords'))
+const HardPractice = lazy(() => import('./HardPractice'))
+const Quiz = lazy(() => import('./Quiz'))
+const Search = lazy(() => import('./Search'))
+const Notebook = lazy(() => import('./Notebook'))
+const PhoneticGuide = lazy(() => import('./PhoneticGuide'))
+const Settings = lazy(() => import('./Settings'))
+const Stats = lazy(() => import('./Stats'))
+const PlacementTest = lazy(() => import('./PlacementTest'))
+const Themes = lazy(() => import('./Themes'))
+const Library = lazy(() => import('./Library'))
+const Reader = lazy(() => import('./Reader'))
+const SentencePractice = lazy(() => import('./SentencePractice'))
+const LearningPath = lazy(() => import('./LearningPath'))
+const LoginIntro = lazy(() => import('./LoginIntro'))
+const Dictation = lazy(() => import('./Dictation'))
+const Games = lazy(() => import('./Games'))
 
 function App() {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches   // Sistem ayarlarında "hareketi azalt" açık olanlara yumuşak kaydırma uygulanmasın
@@ -104,7 +107,11 @@ function App() {
   return (
     <div className="app-shell">
       {!reduceMotion && <ReactLenis root options={{ lerp: 0.03, smoothWheel: true }} />}
-      {showIntro && <LoginIntro onDone={() => setShowIntro(false)} />}
+      {showIntro && (
+        <Suspense fallback={null}>
+          <LoginIntro onDone={() => setShowIntro(false)} />
+        </Suspense>
+      )}
       <Sidebar view={view} onNavigate={navigate} onLogout={handleLogout} />
 
       <div className="app-content">
@@ -126,89 +133,94 @@ function App() {
         </header>
 
         <main className="app-main">
-          {view === 'home' && (
-            <Home
-              onStartStudy={startStudy}
-              onNavigate={navigate}
-              onOpenStory={id => { setStoryId(id); navigate('reader') }}
-            />
-          )}
-          {view === 'levels' && <Levels onStartStudy={startStudy} />}
-          {view === 'study' && <StudySession level={studyLevel} onExit={goHome} />}
-          {view === 'stats' && <Stats />}
-          {view === 'hard' && (
-            <HardWords
-              onBack={goHome}
-              onStartPractice={(level) => { setPracticeLevel(level); navigate('hardPractice') }}
-            />
-          )}
+          {/* Lazy sayfanın kodu inene kadar "Yükleniyor..." görünür */}
+          <Suspense fallback={<div className="panel">Yükleniyor...</div>}>
+            {view === 'home' && (
+              <Home
+                onStartStudy={startStudy}
+                onNavigate={navigate}
+                onOpenStory={id => { setStoryId(id); navigate('reader') }}
+              />
+            )}
+            {view === 'levels' && <Levels onStartStudy={startStudy} />}
+            {view === 'study' && <StudySession level={studyLevel} onExit={goHome} />}
+            {view === 'stats' && <Stats />}
+            {view === 'hard' && (
+              <HardWords
+                onBack={goHome}
+                onStartPractice={(level) => { setPracticeLevel(level); navigate('hardPractice') }}
+              />
+            )}
+            {view === 'hardPractice' && <HardPractice level={practiceLevel} onExit={() => navigate('hard')} />}
 
-          {view === 'hardPractice' && <HardPractice level={practiceLevel} onExit={() => navigate('hard')} />}
-          {view === 'quizSetup' && (
-            <div className="page quiz-setup">
-              <h2 className="page-title">Sınav</h2>
-              <QuizCard onStart={(level, count, sections) => startQuiz({ level, count, sections })} />
-              <QuizInfo onNavigate={navigate} />
-            </div>
-          )}
+            {view === 'quizSetup' && (
+              <div className="page quiz-setup">
+                <h2 className="page-title">Sınav</h2>
+                <QuizCard onStart={(level, count, sections) => startQuiz({ level, count, sections })} />
+                <QuizInfo onNavigate={navigate} />
+              </div>
+            )}
+            {view === 'quiz' && (
+              <Quiz
+                level={quizConfig.level}
+                listId={quizConfig.listId}
+                listName={quizConfig.listName}
+                themeId={quizConfig.themeId}
+                themeName={quizConfig.themeName}
+                sections={quizConfig.sections}
+                count={quizConfig.count}
+                wordIds={quizConfig.wordIds}
+                pathUnit={quizConfig.pathUnit}
+                onExit={() => navigate(
+                  quizConfig.fromStory ? 'reader'
+                    : quizConfig.pathUnit ? 'path'
+                    : quizConfig.listId ? 'notebook'
+                    : quizConfig.themeId ? 'themes'
+                    : 'quizSetup'
+                )}
+              />
+            )}
 
-          {view === 'quiz' && (
-            <Quiz
-              level={quizConfig.level}
-              listId={quizConfig.listId}
-              listName={quizConfig.listName}
-              themeId={quizConfig.themeId}
-              themeName={quizConfig.themeName}
-              sections={quizConfig.sections}
-              count={quizConfig.count}
-              wordIds={quizConfig.wordIds}
-              pathUnit={quizConfig.pathUnit}
-              onExit={() => navigate(
-                quizConfig.fromStory ? 'reader'
-                  : quizConfig.pathUnit ? 'path'
-                  : quizConfig.listId ? 'notebook'
-                  : quizConfig.themeId ? 'themes'
-                  : 'quizSetup'
-              )}
-            />
-          )}
-          {view === 'search' && <Search query={searchQuery} onQueryChange={handleSearchInput} onNavigate={navigate} />}
-          {view === 'notebook' && <Notebook onBack={goHome} onStartQuiz={startQuiz} />}
-          {view === 'games' && <Games />}
-          {view === 'themes' && <Themes onStartQuiz={startQuiz} />}
-          {view === 'phonetics' && <PhoneticGuide onBack={goHome} />}
-          {view === 'settings' && <Settings onBack={goHome} />}
-          {view === 'placement' && <PlacementTest onExit={goHome} onStartLevel={startStudy} />}
-          {view === 'library' && (
-            <Library
-              onOpen={id => { setStoryId(id); navigate('reader') }}
-              onOpenCustom={() => { setStoryId('custom'); navigate('reader') }}
-            />
-          )}
-          {view === 'reader' && (
-            <Reader
-              storyId={storyId}
-              onExit={() => navigate('library')}
-              onStartQuiz={ids => startQuiz({ wordIds: ids, count: Math.min(10, ids.length), fromStory: true })}
-            />
-          )}
-          {view === 'sentence' && <SentencePractice onExit={goHome} />}
-          {view === 'dictation' && <Dictation onExit={goHome} />}
-          {view === 'badges' && <Badges />}
-          {view === 'path' && (
-            <LearningPath
-              onStartTest={({ level, unit, words }) => startQuiz({
-                wordIds: words.map(w => w.wordId),
-                count: Math.min(10, words.length),
-                pathUnit: {
-                  level,
-                  themeId: unit.themeId,
-                  part: unit.part,
-                  name: unit.partCount > 1 ? `${unit.name} ${unit.part}` : unit.name
-                }
-              })}
-            />
-          )}
+            {view === 'search' && <Search query={searchQuery} onQueryChange={handleSearchInput} onNavigate={navigate} />}
+            {view === 'notebook' && <Notebook onBack={goHome} onStartQuiz={startQuiz} />}
+            {view === 'themes' && <Themes onStartQuiz={startQuiz} />}
+            {view === 'phonetics' && <PhoneticGuide onBack={goHome} />}
+            {view === 'settings' && <Settings onBack={goHome} />}
+            {view === 'placement' && <PlacementTest onExit={goHome} onStartLevel={startStudy} />}
+
+            {view === 'library' && (
+              <Library
+                onOpen={id => { setStoryId(id); navigate('reader') }}
+                onOpenCustom={() => { setStoryId('custom'); navigate('reader') }}
+              />
+            )}
+            {view === 'reader' && (
+              <Reader
+                storyId={storyId}
+                onExit={() => navigate('library')}
+                onStartQuiz={ids => startQuiz({ wordIds: ids, count: Math.min(10, ids.length), fromStory: true })}
+              />
+            )}
+
+            {view === 'sentence' && <SentencePractice onExit={goHome} />}
+            {view === 'dictation' && <Dictation onExit={goHome} />}
+            {view === 'games' && <Games />}
+            {view === 'badges' && <Badges />}
+            {view === 'path' && (
+              <LearningPath
+                onStartTest={({ level, unit, words }) => startQuiz({
+                  wordIds: words.map(w => w.wordId),
+                  count: Math.min(10, words.length),
+                  pathUnit: {
+                    level,
+                    themeId: unit.themeId,
+                    part: unit.part,
+                    name: unit.partCount > 1 ? `${unit.name} ${unit.part}` : unit.name
+                  }
+                })}
+              />
+            )}
+          </Suspense>
         </main>
       </div>
     </div>
