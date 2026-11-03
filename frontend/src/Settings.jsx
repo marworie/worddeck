@@ -113,6 +113,17 @@ function Settings({ onBack }) {
             onChange={v => updatePref('slowSpeech', v)}
           />
         </div>
+        <div className="setting-row">
+          <div>
+            <b>Kartları otomatik oku</b>
+            <p className="muted small">Kart çalışırken her yeni kelime kendiliğinden seslendirilsin</p>
+          </div>
+          <OptionRow
+            options={[{ value: true, label: 'Açık' }, { value: false, label: 'Kapalı' }]}
+            value={prefs.autoSpeak}
+            onChange={v => updatePref('autoSpeak', v)}
+          />
+        </div>
         <button className="btn btn-secondary" onClick={() => speak('Pronunciation')}>🔊 Dene</button>
       </section>
 

@@ -6,8 +6,9 @@
 // Klavye: Boşluk = çevir, 1–4 = değerlendir, ← bilmiyorum, → biliyorum, Backspace / Ctrl+Z = geri al
 // ============================================================
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { apiFetch } from './api'
+import { getPrefs, speak } from './preferences'
 import Flashcard from './Flashcard'
 
 // Değerlendirme butonları. Aralıklar backend'deki LeitnerService ile aynı:
@@ -39,6 +40,7 @@ function StudySession({ level, onExit }) {
   const [isAnswering, setIsAnswering] = useState(false)
   const [stats, setStats] = useState({ known: 0, unknown: 0 })
   const [lastRating, setLastRating] = useState(null)   // son verilen cevap: geri alınabilsin diye (null = yok)
+  const spokenRef = useRef(null)   // en son okunan kartın wordId'si: aynı kelime iki kez okunmasın
 
   // Oturumu yükle (yeniden başlatmak için de kullanılıyor)
   function loadSession() {
@@ -57,6 +59,20 @@ function StudySession({ level, onExit }) {
 
   const card = cards?.[index]
   const isFinished = cards && index >= cards.length
+
+  // Kelimeyi oku (ayar açıksa ve bu kart daha önce okunmadıysa)
+  function autoSpeak(c) {
+    if (!c || !getPrefs().autoSpeak || spokenRef.current === c.wordId) return
+    spokenRef.current = c.wordId
+    speak(c.headword)
+  }
+
+  // İlk kart ve geri alınan kart için (sonraki kartlar butona basıldığı anda okunuyor)
+  useEffect(() => {
+    if (!card) return
+    const t = setTimeout(() => autoSpeak(card), 350)   // kart animasyonu başlasın
+    return () => clearTimeout(t)
+  }, [card?.wordId])   // eslint-disable-line react-hooks/exhaustive-deps
 
   // Oturum yüklenince tüm kartların detaylarını arka planda sırasıyla çek
   // Kullanıcı ilk kartlarla uğraşırken sonrakiler veritabanına kaydedilmiş olur
@@ -78,6 +94,8 @@ function StudySession({ level, onExit }) {
   async function answer(rating) {
     if (!card || isAnswering) return
     setIsAnswering(true)
+    // Sonraki kartı şimdi oku: buton basışının içinde olduğu için iPhone'da da ses çalar
+    autoSpeak(cards[index + 1])
 
     const response = await apiFetch('/api/Study/answer', {
       method: 'POST',
@@ -103,6 +121,7 @@ function StudySession({ level, onExit }) {
 
     const response = await apiFetch('/api/Study/undo', { method: 'POST' })
     if (response.ok) {
+      spokenRef.current = null   // geri gelen kart tekrar okunabilsin
       const wasKnown = lastRating > 0
       setStats(prev => wasKnown
         ? { ...prev, known: prev.known - 1 }

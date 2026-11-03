@@ -4,7 +4,7 @@
 // uygulamadaki tüm seslendirmelerin geçtiği ortak speak() fonksiyonu.
 // ============================================================
 
-const DEFAULTS = { accent: 'en-US', slowSpeech: false, theme: 'system' }
+const DEFAULTS = { accent: 'en-US', slowSpeech: false, theme: 'system', autoSpeak: true }
 
 export function getPrefs() {
   try {
