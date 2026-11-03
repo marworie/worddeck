@@ -7,6 +7,8 @@ namespace WordDeck.Services
         public int WordId { get; set; }
         public string Headword { get; set; } = "";
         public string Meaning { get; set; } = "";
+        public string? Level { get; set; } = "";
+
     }
 
     // Oyunlar için kelime hazırlama
@@ -40,6 +42,27 @@ namespace WordDeck.Services
                 if (result.Count == count) break;
             }
             return result;
+        }
+
+        // Sadece İngilizce küçük harflerden oluşan, istenen uzunlukta kelime mi?
+        public static bool IsLetters(string? word, int min, int max) =>
+            word != null && word.Length >= min && word.Length <= max && word.All(c => c is >= 'a' and <= 'z');
+
+        // Günün kelimesi: aynı gün herkese aynı kelime, her gün farklı
+        public static T DailyPick<T>(IReadOnlyList<T> items, DateOnly day)
+        {
+            if (items.Count == 0) throw new ArgumentException("Liste boş", nameof(items));
+            long hash = day.DayNumber * 2654435761L;   // ardışık günleri listeye dağıtır
+            return items[(int)(hash % items.Count)];
+        }
+
+        // Kelime zinciri kuralı: hata varsa mesajı, yoksa null döner
+        public static string? ChainError(string? prev, string word, IEnumerable<string> used)
+        {
+            if (!IsLetters(word, 2, 20)) return "Sadece İngilizce harf kullan";
+            if (!string.IsNullOrEmpty(prev) && word[0] != prev[^1]) return $"'{char.ToUpper(prev[^1])}' harfiyle başlamalı";
+            if (used.Contains(word, StringComparer.OrdinalIgnoreCase)) return "Bu kelime zaten kullanıldı";
+            return null;
         }
     }
 }

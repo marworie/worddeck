@@ -44,5 +44,33 @@ namespace WordDeck.Tests
                 .Select(i => new GameWordDto { WordId = i, Headword = $"w{i}", Meaning = $"m{i}" });
             Assert.Equal(4, GameRules.PickPairs(words, 4).Count);
         }
+
+        [Fact]
+        public void DailyPick_SameDaySameWord()
+        {
+            var items = Enumerable.Range(1, 100).ToList();
+            var day = new DateOnly(2026, 11, 3);
+            Assert.Equal(GameRules.DailyPick(items, day), GameRules.DailyPick(items, day));
+        }
+
+        [Fact]
+        public void DailyPick_ChangesAcrossDays()
+        {
+            var items = Enumerable.Range(1, 100).ToList();
+            var start = new DateOnly(2026, 11, 1);
+            var picks = Enumerable.Range(0, 30).Select(d => GameRules.DailyPick(items, start.AddDays(d))).Distinct().Count();
+            Assert.True(picks >= 20);   // bir ayda kelimeler çok az tekrar etsin
+        }
+
+        [Theory]
+        [InlineData("apple", "egg", null)]
+        [InlineData("apple", "dog", "'E' harfiyle başlamalı")]
+        [InlineData("banana", "apple", "Bu kelime zaten kullanıldı")]   // "a" ile bitiyor, apple listede var
+        [InlineData("apple", "e-mail", "Sadece İngilizce harf kullan")]
+        [InlineData(null, "cat", null)]
+        public void ChainError_ChecksRules(string? prev, string word, string? expected)
+        {
+            Assert.Equal(expected, GameRules.ChainError(prev, word, new[] { "apple" }));
+        }
     }
 }

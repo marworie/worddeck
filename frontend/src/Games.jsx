@@ -8,6 +8,13 @@ import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
 import { speakWord } from './readerText'
 import PageHeader from './PageHeader'
+import GameWordle from './GameWordle'
+import GameSentence from './GameSentence'
+import GameRain from './GameRain'
+import GameBalloon from './GameBalloon'
+import GameWordSearch from './GameWordSearch'
+import GameChain from './GameChain'
+import GameSpelling from './GameSpelling'
 
 const SOURCES = [
   { id: 'mine', label: 'Kelimelerim' },
@@ -727,14 +734,25 @@ function Scramble({ source, onBack }) {
 
 // ---------- Oyunlar sayfası ----------
 const GAMES = [
+  { id: 'wordle',   emoji: '🟩', tone: 't-teal',   title: 'Günün kelimesi',  desc: '5 harfli kelimeyi 6 denemede bul. Her gün yeni kelime, serini koru!' },
   { id: 'match',    emoji: '🃏', tone: 't-teal',   title: 'Eşleştirme',      desc: 'İngilizce kelimeyi Türkçe anlamıyla eşleştir. Ne kadar hızlısın?' },
   { id: 'memory',   emoji: '🧠', tone: 't-pink',   title: 'Hafıza kartları', desc: 'Kartlar kapalı! Kelimeyi ve anlamını hatırlayarak en az hamlede eşleştir.' },
   { id: 'quick',    emoji: '⚡', tone: 't-yellow', title: 'Hızlı karar',     desc: '60 saniye: anlam doğru mu yanlış mı? ← → tuşlarıyla oyna.' },
+  { id: 'rain',     emoji: '🌧️', tone: 't-blue',   title: 'Kelime yağmuru',  desc: 'Türkçe anlamlar yağıyor! Yere düşmeden İngilizcesini yaz, patlat.' },
+  { id: 'sentence', emoji: '🧩', tone: 't-lilac',  title: 'Cümle dizme',     desc: 'Karışık kelimeleri doğru sıraya diz, cümleyi kur.' },
+  { id: 'balloon',  emoji: '🎈', tone: 't-red',    title: 'Balon patlatma',  desc: 'Kelimeyi dinle, doğru yazılmış balonu patlat.' },
+  { id: 'spelling', emoji: '🐝', tone: 't-yellow', title: 'Spelling Bee',    desc: 'Duyduğun kelimeyi harfi harfine doğru yaz.' },
+  { id: 'search',   emoji: '🔍', tone: 't-peach',  title: 'Kelime avı',      desc: 'Harf tablosunda gizli kelimeleri bul. İpuçları Türkçe.' },
+  { id: 'chain',    emoji: '🔗', tone: 't-pink',   title: 'Kelime zinciri',  desc: 'Bilgisayarla sırayla: son harfle başlayan kelimeyi bul!' },
   { id: 'scramble', emoji: '🔀', tone: 't-blue',   title: 'Harf karıştırma', desc: 'Karışık harflerden kelimeyi kur. Türkçe anlamı ipucu.' },
   { id: 'hangman',  emoji: '🪢', tone: 't-lilac',  title: 'Adam asmaca',     desc: 'Harf harf tahmin et, 6 hatada adam asılır.' }
 ]
 
-const SCREENS = { match: MatchGame, memory: Memory, quick: QuickGame, scramble: Scramble, hangman: Hangman }
+const SCREENS = {
+  wordle: GameWordle, match: MatchGame, memory: Memory, quick: QuickGame, rain: GameRain, sentence: GameSentence,
+  balloon: GameBalloon, spelling: GameSpelling, search: GameWordSearch, chain: GameChain,
+  scramble: Scramble, hangman: Hangman
+}
 
 function Games() {
   const [source, setSource] = useState('mine')
