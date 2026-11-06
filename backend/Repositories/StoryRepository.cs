@@ -12,6 +12,9 @@ namespace WordDeck.Repositories
         Task<int> AddAsync(StoryRow story);
         Task<IEnumerable<StoryRow>> GetAllRowsAsync();
         Task UpdateLevelAsync(int id, string level, int pageCount);
+        Task<IEnumerable<StoryWordMarkDto>> GetWordMarksAsync(int userId, int storyId);
+        Task SetWordMarkAsync(int userId, int storyId, int wordId, string mark);
+        Task DeleteWordMarkAsync(int userId, int storyId, int wordId);
     }
 
     public class StoryRepository : BaseRepository, IStoryRepository
@@ -66,5 +69,27 @@ namespace WordDeck.Repositories
         public Task UpdateLevelAsync(int id, string level, int pageCount) =>
             ExecuteAsync("UPDATE Stories SET Level = @Level, PageCount = @PageCount WHERE Id = @Id",
                 new { Id = id, Level = level, PageCount = pageCount });
+
+        public Task<IEnumerable<StoryWordMarkDto>> GetWordMarksAsync(int userId, int storyId) =>
+            QueryAsync<StoryWordMarkDto>(
+                @"SELECT WordId, Mark FROM UserStoryWords
+                  WHERE UserId = @UserId AND StoryId = @StoryId
+                  ORDER BY UpdatedAt",
+                new { UserId = userId, StoryId = storyId });
+
+        // Varsa güncelle, yoksa ekle
+        public Task SetWordMarkAsync(int userId, int storyId, int wordId, string mark) =>
+            ExecuteAsync(
+                @"UPDATE UserStoryWords SET Mark = @Mark, UpdatedAt = SYSUTCDATETIME()
+                  WHERE UserId = @UserId AND StoryId = @StoryId AND WordId = @WordId;
+                  IF @@ROWCOUNT = 0
+                      INSERT INTO UserStoryWords (UserId, StoryId, WordId, Mark)
+                      VALUES (@UserId, @StoryId, @WordId, @Mark);",
+                new { UserId = userId, StoryId = storyId, WordId = wordId, Mark = mark });
+
+        public Task DeleteWordMarkAsync(int userId, int storyId, int wordId) =>
+            ExecuteAsync(
+                "DELETE FROM UserStoryWords WHERE UserId = @UserId AND StoryId = @StoryId AND WordId = @WordId",
+                new { UserId = userId, StoryId = storyId, WordId = wordId });
     }
 }

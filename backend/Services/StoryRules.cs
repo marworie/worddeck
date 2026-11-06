@@ -172,5 +172,9 @@ namespace WordDeck.Services
             Regex.Matches(body, @"(?<![\w'’])[a-z]{3,}(?![\w'’])")
                 .Select(m => m.Value)
                 .ToHashSet();
+        
+                // Kullanıcının kitapta kelimeye koyabileceği işaretler
+        public static readonly string[] WordMarks = { "unknown", "shaky" };
+        public static bool IsValidMark(string? mark) => mark != null && WordMarks.Contains(mark);
     }
 }

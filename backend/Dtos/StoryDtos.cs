@@ -66,4 +66,15 @@ namespace WordDeck.Dtos
     {
         public int Page { get; set; }
     }
+    
+    public class StoryWordMarkDto
+    {
+        public int WordId { get; set; }
+        public string Mark { get; set; } = "";   // unknown | shaky
+    }
+
+    public class StoryWordMarkRequest
+    {
+        public string Mark { get; set; } = "";
+    }
 }

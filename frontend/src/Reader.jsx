@@ -1,8 +1,9 @@
 // ============================================================
 // Reader.jsx
 // Hikaye okuyucu: kitap görünümü, sayfa çevirme (ok, tuş, sürükleme),
-// kelimenin üzerine gelince anlam, tıklayınca kelime detayı,
-// kelime durumlarına göre renkler (kullanıcı seçer),
+// kelimenin üzerine gelince anlam; tıklayınca kullanıcı kelimeyi kendisi işaretler
+// (bilmiyorum / az biliyorum), işaretler her kitap için ayrı kaydedilir ve
+// "Kelime listesi" panelinde görünür; renkleri kullanıcı seçer,
 // sesli okuma (okunan kelime vurgulanır, sayfa kendiliğinden çevrilir),
 // okuma kontrolü (kullanıcı okur, doğru/atlanan kelimeler işaretlenir).
 // ============================================================
@@ -10,13 +11,27 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { apiFetch } from './api'
 import {
-  DEFAULT_COLORS, STATUS_LABELS, alignReading, loadColors, loadCustomText, normalizeWord, paginateText,
+  DEFAULT_COLORS, alignReading, loadColors, loadCustomText, normalizeWord, paginateText,
   pickEnglishVoice, saveColors, saveCustomText, softColor, speakWord, tokenize, uniqueWords
 } from './readerText'
 import { useToast } from './ToastContext'
 import WordDetailModal from './WordDetailModal'
 
-const STATUS_TEXT = { new: 'Hiç bilmiyorsun', studying: 'Tekrar etmen gerek', known: 'Biliyorsun', learned: 'Öğrendin' }
+// Kullanıcının işaretleri ve renk paletindeki karşılıkları (palette "new" kırmızı, "studying" sarı)
+const MARKS = {
+  unknown: { label: 'Bilmiyorum', emoji: '🔴', color: 'new' },
+  shaky: { label: 'Az biliyorum', emoji: '🟡', color: 'studying' }
+}
+const PALETTE_LABELS = { new: 'Bilmiyorum', studying: 'Az biliyorum' }
+const CUSTOM_MARKS_KEY = 'customTextMarks'   // kendi metnin için işaretler (veritabanında hikaye yok)
+
+function loadCustomMarks() {
+  try { return new Map(JSON.parse(localStorage.getItem(CUSTOM_MARKS_KEY)) ?? []) } catch { return new Map() }
+}
+
+function saveCustomMarks(map) {
+  try { localStorage.setItem(CUSTOM_MARKS_KEY, JSON.stringify([...map])) } catch { /* önemli değil */ }
+}
 const DRAG_DISTANCE = 60   // bu kadar piksel sürüklenince sayfa çevrilir
 const TURN_MS = 600        // sayfa çevirme animasyonu
 const canSpeak = 'speechSynthesis' in window
@@ -40,7 +55,7 @@ function customStory() {
 
 // Bir sayfanın metni: tanınan kelimeler etkileşimli, okunan kelime vurgulu,
 // okuma kontrolünde doğru / atlanan kelimeler işaretli
-function PageText({ text, pageIndex, words, active, marks, onHover, onLeave, onPick }) {
+function PageText({ text, pageIndex, words, wordMarks, active, marks, onHover, onLeave, onPick }) {
   return text.split('\n\n').map((para, i) => {
     let offset = 0   // kelimenin paragraf içindeki yeri (sesli okumadaki charIndex ile eşleşir)
     return (
@@ -54,13 +69,14 @@ function PageText({ text, pageIndex, words, active, marks, onHover, onLeave, onP
           const info = t.word ? words.get(t.key) : null
 
           if (!info) return <span key={j} className={extra.trim() || undefined}>{t.text}</span>
+          const own = MARKS[wordMarks.get(info.wordId)]   // kullanıcının işareti (yoksa renksiz)
           return (
             <span
               key={j}
-              className={`rw rw-${info.status} ${extra}`}
+              className={`rw ${own ? `rw-${own.color}` : ''} ${extra}`}
               onMouseEnter={e => onHover(info, t.text, e.currentTarget)}
               onMouseLeave={onLeave}
-              onClick={() => onPick(info)}
+              onClick={e => onPick(info, t.text, e.currentTarget)}
             >
               {t.text}
             </span>
@@ -79,6 +95,9 @@ function Reader({ storyId, onExit, onStartQuiz }) {
   const [turning, setTurning] = useState(null)   // çevrilen sayfa (animasyon)
   const [tip, setTip] = useState(null)
   const [selected, setSelected] = useState(null)
+  const [wordMarks, setWordMarks] = useState(new Map())   // wordId → 'unknown' | 'shaky'
+  const [picked, setPicked] = useState(null)              // işaretleme penceresi: { info, text, x, y }
+  const [showList, setShowList] = useState(false)         // kelime listesi paneli
   const [colors, setColors] = useState(loadColors)
   const [showPalette, setShowPalette] = useState(false)
   const [speaking, setSpeaking] = useState(null) // { page, para, char }: okunan yer
@@ -115,11 +134,18 @@ function Reader({ storyId, onExit, onStartQuiz }) {
       loadWords(s.pages)
     }
 
-    if (storyId === 'custom') { open(customStory()); return }
+    if (storyId === 'custom') {
+      open(customStory())
+      setWordMarks(loadCustomMarks())
+      return
+    }
 
     apiFetch(`/api/Stories/${storyId}`)
       .then(r => (r.ok ? r.json() : null))
       .then(open)
+    apiFetch(`/api/Stories/${storyId}/words`)
+      .then(r => (r.ok ? r.json() : []))
+      .then(list => setWordMarks(new Map(list.map(m => [m.wordId, m.mark]))))
   }, [storyId, perView, loadWords])
 
   const stopSpeaking = useCallback(() => {
@@ -176,13 +202,13 @@ function Reader({ storyId, onExit, onStartQuiz }) {
   // ← → tuşları
   useEffect(() => {
     const onKey = e => {
-      if (selected) return
+      if (selected || picked) return
       if (e.key === 'ArrowRight') turn(1)
       if (e.key === 'ArrowLeft') turn(-1)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [turn, selected])
+  }, [turn, selected, picked])
 
   // ---------- Sesli okuma ----------
 
@@ -315,6 +341,35 @@ function Reader({ storyId, onExit, onStartQuiz }) {
     updateColors({ ...colors, [status]: { ...colors[status], ...patch } })
   }
 
+  // ---------- Kelime işaretleme ----------
+
+  function pickWord(info, text, el) {
+    const rect = el.getBoundingClientRect()
+    setTip(null)
+    setPicked({ info, text, x: rect.left + rect.width / 2, y: rect.bottom })
+  }
+
+  // mark: 'unknown' | 'shaky' | null (işareti kaldır)
+  function setMark(info, mark) {
+    const next = new Map(wordMarks)
+    if (mark) next.set(info.wordId, mark)
+    else next.delete(info.wordId)
+    setWordMarks(next)
+    setPicked(null)
+
+    if (story.id === 'custom') { saveCustomMarks(next); return }
+    const url = `/api/Stories/${story.id}/words/${info.wordId}`
+    if (mark) apiFetch(url, { method: 'PUT', body: JSON.stringify({ mark }) })
+    else apiFetch(url, { method: 'DELETE' })
+  }
+
+  // İşaretli kelimelerin hepsini kart çalışmasına ekle
+  async function addAllToStudy(list) {
+    await Promise.all(list.map(w => apiFetch(`/api/Reader/study/${w.wordId}`, { method: 'POST' })))
+    showToast(`${list.length} kelime çalışmaya eklendi, kart çalışmasında karşına çıkacak.`, 'success')
+    loadWords(story.pages)
+  }
+
   // Detay penceresi kapanınca durumlar değişmiş olabilir (çalışmaya eklendi vs.)
   function closeModal() {
     setSelected(null)
@@ -333,9 +388,15 @@ function Reader({ storyId, onExit, onStartQuiz }) {
   const visible = story.pages.slice(index, index + perView)
   const lastVisible = index + visible.length
 
-  // Durumlara göre kelime sayıları ve renk değişkenleri
-  const counts = { new: 0, studying: 0, known: 0, learned: 0 }
-  for (const w of words.values()) counts[w.status]++
+  // İşaretli kelimeler (kelime listesi için anlamlarıyla) ve renk değişkenleri
+  const infoById = new Map([...words.values()].map(w => [w.wordId, w]))
+  const markedList = [...wordMarks]
+    .map(([wordId, mark]) => ({ ...infoById.get(wordId), wordId, mark }))
+    .filter(w => w.headword)   // kelime bilgisi henüz yüklenmediyse gösterme
+  const counts = {
+    new: markedList.filter(w => w.mark === 'unknown').length,
+    studying: markedList.filter(w => w.mark === 'shaky').length
+  }
   const colorVars = Object.fromEntries(Object.keys(colors).map(k => [`--c-${k}`, softColor(colors[k])]))
 
   // Okuma kontrolü: ekrandaki kelimeler sırayla, okunanlarla eşleştirilir
@@ -351,13 +412,9 @@ function Reader({ storyId, onExit, onStartQuiz }) {
   const okCount = states.filter(s => s === 'ok').length
   const missedWords = [...new Set(expected.filter((e, i) => states[i] === 'missed').map(e => e.key))]
   const score = pos > 0 ? Math.round((okCount / pos) * 100) : 0
-  // Son sayfa: bilinmeyen ve tekrar edilecek kelimelerden test
+  // Son sayfa: işaretlediğin kelimelerden test
   const atEnd = lastVisible >= story.pages.length
-  const quizIds = [...new Set(
-    [...words.values()]
-      .filter(w => w.status === 'new' || w.status === 'studying')
-      .map(w => w.wordId)
-  )]
+  const quizIds = markedList.map(w => w.wordId)
 
   return (
     <div className="reader" style={{ '--book': story.color, ...colorVars }}>
@@ -372,7 +429,7 @@ function Reader({ storyId, onExit, onStartQuiz }) {
               {['new', 'studying'].map(k => (
                 <span key={k}>
                   <i className="legend-dot" style={{ background: colors[k].on ? colors[k].color : 'var(--border)' }} />
-                  {counts[k]} {k === 'new' ? 'hiç bilmediğin' : 'tekrar edeceğin'}
+                  {counts[k]} {k === 'new' ? 'bilmediğin' : 'az bildiğin'}
                 </span>
               ))}
             </div>
@@ -394,15 +451,19 @@ function Reader({ storyId, onExit, onStartQuiz }) {
             ? <button className="btn btn-danger" onClick={finishChecking}>⏹ Bitir</button>
             : <button className="btn btn-ghost" onClick={startChecking}>🎤 Ben okuyayım</button>)}
 
+          <button className="btn btn-ghost" onClick={() => setShowList(true)}>
+            📋 <span className="palette-label">Kelime listesi</span> ({markedList.length})
+          </button>
+
           <div className="palette-wrap">
             <button className="btn btn-ghost" onClick={() => setShowPalette(p => !p)}>🎨 <span className="palette-label">Renkler</span></button>
             {showPalette && (
               <div className="color-panel panel" data-lenis-prevent>
-                {Object.keys(STATUS_LABELS).map(k => (
+                {Object.keys(PALETTE_LABELS).map(k => (
                   <label key={k} className="color-row">
                     <input type="checkbox" checked={colors[k].on} onChange={e => updateColor(k, { on: e.target.checked })} />
                     <span className="color-sample" style={{ background: softColor(colors[k]) }}>word</span>
-                    <span className="color-label">{STATUS_LABELS[k]} <span className="muted small">({counts[k]})</span></span>
+                    <span className="color-label">{PALETTE_LABELS[k]} <span className="muted small">({counts[k]})</span></span>
                     <input type="color" value={colors[k].color} onChange={e => updateColor(k, { color: e.target.value, on: true })} />
                   </label>
                 ))}
@@ -451,11 +512,12 @@ function Reader({ storyId, onExit, onStartQuiz }) {
                 text={text}
                 pageIndex={index + i}
                 words={words}
+                wordMarks={wordMarks}
                 active={speaking && speaking.page === index + i ? speaking : null}
                 marks={marks}
                 onHover={showTip}
                 onLeave={() => setTip(null)}
-                onPick={info => { setTip(null); setSelected(info) }}
+                onPick={pickWord}
               />
               <span className="page-number">{index + i + 1}</span>
             </article>
@@ -488,10 +550,10 @@ function Reader({ storyId, onExit, onStartQuiz }) {
             <b>Hikayeyi bitirdin!</b>
             {quizIds.length >= 4 ? (
               <p className="muted small">
-                Bu hikayede {quizIds.length} bilmediğin ya da tekrar etmen gereken kelime vardı. Hepsini hatırlıyor musun?
+                Bu hikayede {quizIds.length} kelime işaretledin. Hepsini hatırlıyor musun?
               </p>
             ) : (
-              <p className="muted small">Bu hikayedeki neredeyse bütün kelimeleri biliyorsun 👏</p>
+              <p className="muted small">Kelime testi için en az 4 kelime işaretlemelisin. Bilmediklerine dokunup işaretle 👆</p>
             )}
           </div>
           {quizIds.length >= 4 && (
@@ -509,7 +571,88 @@ function Reader({ storyId, onExit, onStartQuiz }) {
           </b>
           <span className="word-tip-meta"> {tip.info.partOfSpeech} · {tip.info.level}</span>
           <div>{tip.info.meaning || 'Anlam henüz yok'}</div>
-          <div className={`word-tip-status ${tip.info.status}`}>{STATUS_TEXT[tip.info.status]} · tıkla, kaydet</div>
+          <div className="word-tip-status">
+            {MARKS[wordMarks.get(tip.info.wordId)] ? `${MARKS[wordMarks.get(tip.info.wordId)].emoji} ${MARKS[wordMarks.get(tip.info.wordId)].label} · ` : ''}tıkla, işaretle
+          </div>
+        </div>
+      )}
+
+      {/* İşaretleme penceresi: kelimeye dokununca açılır */}
+      {picked && (
+        <div className="mark-backdrop" onClick={() => setPicked(null)}>
+          <div
+            className="mark-pop panel"
+            style={{ left: Math.min(Math.max(picked.x, 150), window.innerWidth - 150), top: picked.y + 8 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="mark-pop-head">
+              <b>{picked.info.headword}</b>
+              <span className="muted small">{picked.info.partOfSpeech} · {picked.info.level}</span>
+              <button className="btn btn-ghost small" onClick={() => speakWord(picked.info.headword)} aria-label="Dinle">🔊</button>
+            </div>
+            <p className="mark-pop-meaning">{picked.info.meaning || 'Anlam henüz yok'}</p>
+            <div className="mark-pop-buttons">
+              {Object.entries(MARKS).map(([key, m]) => (
+                <button
+                  key={key}
+                  className={`mark-btn mark-${key} ${wordMarks.get(picked.info.wordId) === key ? 'active' : ''}`}
+                  onClick={() => setMark(picked.info, key)}
+                >
+                  {m.emoji} {m.label}
+                </button>
+              ))}
+              <button className="mark-btn" onClick={() => setMark(picked.info, null)}>✓ Biliyorum</button>
+            </div>
+            <button className="btn btn-ghost small" onClick={() => { setSelected(picked.info); setPicked(null) }}>
+              Kelime detayı →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Kelime listesi: bu kitapta işaretlenen kelimeler */}
+      {showList && (
+        <div className="wl-backdrop" onClick={() => setShowList(false)}>
+          <div className="word-list-sheet" data-lenis-prevent onClick={e => e.stopPropagation()}>
+            <div className="word-list-head">
+              <h3>📋 {story.title}</h3>
+              <button className="btn btn-ghost small" onClick={() => setShowList(false)}>Kapat</button>
+            </div>
+
+            {markedList.length === 0 ? (
+              <p className="muted">Henüz kelime işaretlemedin. Okurken bilmediğin kelimelere dokun 👆</p>
+            ) : (
+              Object.entries(MARKS).map(([key, m]) => {
+                const group = markedList.filter(w => w.mark === key)
+                if (group.length === 0) return null
+                return (
+                  <section key={key} className="word-list-group">
+                    <span className="card-label">{m.emoji} {m.label} · {group.length}</span>
+                    {group.map(w => (
+                      <div key={w.wordId} className={`word-list-row mark-${key}`}>
+                        <button className="btn btn-ghost small" onClick={() => speakWord(w.headword)} aria-label="Dinle">🔊</button>
+                        <div>
+                          <b>{w.headword}</b>
+                          <span className="muted small"> {w.level}</span>
+                          <div className="muted small">{w.meaning || 'Anlam henüz yok'}</div>
+                        </div>
+                        <button className="btn btn-ghost small" onClick={() => setMark(w, key === 'unknown' ? 'shaky' : 'unknown')} title="İşareti değiştir">
+                          {key === 'unknown' ? '🟡' : '🔴'}
+                        </button>
+                        <button className="btn btn-ghost small" onClick={() => setMark(w, null)} title="Listeden çıkar">✕</button>
+                      </div>
+                    ))}
+                  </section>
+                )
+              })
+            )}
+
+            {markedList.length > 0 && (
+              <button className="btn btn-primary" onClick={() => addAllToStudy(markedList)}>
+                + Hepsini çalışmaya ekle ({markedList.length})
+              </button>
+            )}
+          </div>
         </div>
       )}
 

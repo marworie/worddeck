@@ -113,5 +113,15 @@ namespace WordDeck.Tests
             Assert.DoesNotContain("didn", words);
             Assert.DoesNotContain("to", words);
         }
+        [Theory]
+        [InlineData("unknown", true)]
+        [InlineData("shaky", true)]
+        [InlineData("known", false)]
+        [InlineData("", false)]
+        [InlineData(null, false)]
+        public void IsValidMark_AcceptsOnlyKnownMarks(string? mark, bool expected)
+        {
+            Assert.Equal(expected, StoryRules.IsValidMark(mark));
+        }
     }
 }

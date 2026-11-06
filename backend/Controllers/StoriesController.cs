@@ -69,6 +69,29 @@ namespace WordDeck.Controllers
             return NoContent();
         }
 
+        // GET api/Stories/5/words: bu kitapta işaretlenen kelimeler
+        [HttpGet("{id:int}/words")]
+        public async Task<IActionResult> GetWordMarks(int id) =>
+            Ok(await _stories.GetWordMarksAsync(GetUserId(), id));
+
+        // PUT api/Stories/5/words/123  { "mark": "unknown" }
+        [HttpPut("{id:int}/words/{wordId:int}")]
+        public async Task<IActionResult> SetWordMark(int id, int wordId, [FromBody] StoryWordMarkRequest req)
+        {
+            if (!StoryRules.IsValidMark(req.Mark)) return BadRequest("Geçersiz işaret");
+            if (await _stories.GetAsync(id) == null) return NotFound();
+            await _stories.SetWordMarkAsync(GetUserId(), id, wordId, req.Mark);
+            return NoContent();
+        }
+
+        // DELETE api/Stories/5/words/123: işareti kaldır
+        [HttpDelete("{id:int}/words/{wordId:int}")]
+        public async Task<IActionResult> DeleteWordMark(int id, int wordId)
+        {
+            await _stories.DeleteWordMarkAsync(GetUserId(), id, wordId);
+            return NoContent();
+        }
+
         // POST api/Stories/import  (sadece yönetici)
         [HttpPost("import")]
         public async Task<IActionResult> Import([FromBody] StoryImportRequest req)
