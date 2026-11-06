@@ -34,14 +34,8 @@ export function uniqueWords(pages) {
   return [...set]
 }
 
-// İngilizce ses: önce bilgisayardaki yerel ses (kelime vurgulama onunla daha güvenilir)
-export function pickEnglishVoice() {
-  const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'))
-  return voices.find(v => v.localService && v.lang === 'en-US')
-    || voices.find(v => v.localService)
-    || voices[0]
-    || null
-}
+// Ses seçimi preferences.js'te (Ayarlar'daki seçim her yerde geçerli olsun)
+export { pickEnglishVoice } from './preferences'
 
 // Kelime durumlarının renkleri (kullanıcı değiştirebilir, tarayıcıda saklanır)
 export const STATUS_LABELS = {

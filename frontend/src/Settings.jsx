@@ -7,8 +7,8 @@
 import { useEffect, useState } from 'react'
 import { apiFetch } from './api'
 import { useToast } from './ToastContext'
-import { getPrefs, setPref, speak } from './preferences'
 import PageHeader from './PageHeader'
+import { englishVoices, getPrefs, setPref, speak } from './preferences'
 
 const GOALS = [10, 20, 30, 50]
 const NEW_WORDS = [5, 10, 20, 30]
@@ -34,6 +34,21 @@ function Settings({ onBack }) {
   const showToast = useToast()
   const [account, setAccount] = useState(null)   // { dailyNewWords, dailyGoal }
   const [prefs, setPrefs] = useState(getPrefs())
+
+  const [voices, setVoices] = useState(englishVoices)
+
+  // Tarayıcı sesleri geç yüklüyor (özellikle Chrome): hemen, biraz sonra ve hazır olunca listeyi yenile
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) return
+    const update = () => setVoices(englishVoices())
+    update()
+    const t = setTimeout(update, 500)
+    window.speechSynthesis.addEventListener('voiceschanged', update)
+    return () => {
+      clearTimeout(t)
+      window.speechSynthesis.removeEventListener('voiceschanged', update)
+    }
+  }, [])
 
   useEffect(() => {
     apiFetch('/api/Settings').then(r => (r.ok ? r.json() : null)).then(setAccount)
@@ -123,6 +138,20 @@ function Settings({ onBack }) {
             value={prefs.autoSpeak}
             onChange={v => updatePref('autoSpeak', v)}
           />
+        </div>
+        <div className="setting-row">
+          <div>
+            <b>Okuyucu sesi</b>
+            <p className="muted small">"Natural", "Online" ya da "Premium" yazan sesler en doğal olanlar</p>
+          </div>
+          <select
+            className="rate-select"
+            value={prefs.voiceName}
+            onChange={e => { updatePref('voiceName', e.target.value); setTimeout(() => speak('Hello! This is how I sound.'), 50) }}
+          >
+            <option value="">Otomatik (en doğal ses)</option>
+            {voices.map(v => <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>)}
+          </select>
         </div>
         <button className="btn btn-secondary" onClick={() => speak('Pronunciation')}>🔊 Dene</button>
       </section>
