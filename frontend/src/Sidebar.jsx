@@ -2,47 +2,60 @@
 // Sidebar.jsx
 // Sol kenar menüsü: gruplu, her öğenin kendi rengi var.
 // Telefonda alttaki menü çubuğuna dönüşür:
-// 4 ana öğe + "Daha" butonu (kalan sayfalar aşağıdan açılan panelde).
+// Ana sayfa · Çalış · Pratik · Oku · Defterim · Daha
+// "Pratik" (sınav, oyunlar, dikte, cümle kur) sadece telefonda görünür.
 // ============================================================
 
 import { useState } from 'react'
 
 // group: masaüstünde üstünde başlık görünen grup, color: ikon kutucuğunun rengi
-// mobile: telefonda alt çubukta görünsün mü (en fazla 4), short: telefondaki kısa adı
+// mobile: telefonda alt çubukta görünsün, mobileOnly: sadece telefonda (masaüstünde gizli)
+// practice: telefonda Pratik sayfasında olduğu için "Daha" menüsünde gösterilmez
 const NAV = [
   { view: 'home', icon: 'ti-home', label: 'Ana sayfa', color: '#0d9488', mobile: true },
 
   { group: 'Çalış', view: 'levels', icon: 'ti-cards', label: 'Kart çalış', short: 'Çalış', color: '#0d9488', mobile: true },
+  { view: 'practice', icon: 'ti-bolt', label: 'Pratik', color: '#f97316', mobile: true, mobileOnly: true },
   { view: 'hard', icon: 'ti-flame', label: 'Zorlandıklarım', color: '#ef4444' },
-  { view: 'quizSetup', icon: 'ti-checklist', label: 'Sınav', color: '#3b82f6', mobile: true },
+  { view: 'quizSetup', icon: 'ti-checklist', label: 'Sınav', color: '#3b82f6', practice: true },
 
-  { group: 'Pratik', view: 'games', icon: 'ti-puzzle', label: 'Oyunlar', color: '#f97316', mobile: true },
-  { view: 'sentence', icon: 'ti-pencil', label: 'Cümle kur', color: '#ec4899' },
-  { view: 'dictation', icon: 'ti-headphones', label: 'Dikte', color: '#a855f7' },
+  { group: 'Pratik', view: 'games', icon: 'ti-puzzle', label: 'Oyunlar', color: '#f97316', practice: true },
+  { view: 'sentence', icon: 'ti-pencil', label: 'Cümle kur', color: '#ec4899', practice: true },
+  { view: 'dictation', icon: 'ti-headphones', label: 'Dikte', color: '#a855f7', practice: true },
 
   { group: 'Keşfet', view: 'library', icon: 'ti-book', label: 'Okuma', short: 'Oku', color: '#7c3aed', mobile: true },
   { view: 'search', icon: 'ti-search', label: 'Kelime ara', color: '#0ea5e9' },
   { view: 'themes', icon: 'ti-category', label: 'Temalar', color: '#22c55e' },
 
-  { group: 'Ben', view: 'badges', icon: 'ti-award', label: 'Rozetler', color: '#eab308' },
-  { view: 'notebook', icon: 'ti-notebook', label: 'Defterim', color: '#d97706' },
+  { group: 'Ben', view: 'notebook', icon: 'ti-notebook', label: 'Defterim', color: '#d97706', mobile: true },
+  { view: 'badges', icon: 'ti-award', label: 'Rozetler', color: '#eab308' },
   { view: 'stats', icon: 'ti-chart-bar', label: 'İstatistikler', color: '#6366f1' },
   { view: 'phonetics', icon: 'ti-language', label: 'Fonetik rehberi', color: '#64748b' }
 ]
 
-// Telefonda "Daha" panelinde gösterilenler: alt çubukta olmayanlar + ayarlar
+// Telefonda "Daha" panelinde: alt çubukta ve Pratik sayfasında olmayanlar + ayarlar
 const MORE = [
-  ...NAV.filter(item => !item.mobile),
+  ...NAV.filter(item => !item.mobile && !item.practice),
   { view: 'settings', icon: 'ti-settings', label: 'Ayarlar', color: '#64748b' }
 ]
 
 // Alt sayfalardayken ana menüdeki hangi öğe vurgulansın
 const PARENT_VIEW = { study: 'levels', hardPractice: 'hard', quiz: 'quizSetup', reader: 'library' }
+const PRACTICE_VIEWS = ['quizSetup', 'games', 'sentence', 'dictation']
+
+// Pratik sayfası gizlenince stil: masaüstünde mobileOnly, telefonda sadece alt çubuktakiler
+function wrapClass(item) {
+  if (item.mobileOnly) return 'nav-wrap mobile-only'
+  return item.mobile ? 'nav-wrap' : 'nav-wrap desktop-only'
+}
 
 function Sidebar({ view, onNavigate, onLogout }) {
   const [moreOpen, setMoreOpen] = useState(false)
   const active = PARENT_VIEW[view] ?? view
   const moreActive = MORE.some(item => item.view === active)
+
+  // Pratik öğesi, içindeki sayfalardan biri açıkken de vurgulansın (telefonda)
+  const isActive = v => active === v || (v === 'practice' && PRACTICE_VIEWS.includes(active))
 
   function go(next) {
     setMoreOpen(false)
@@ -59,10 +72,10 @@ function Sidebar({ view, onNavigate, onLogout }) {
 
         <nav className="sidebar-nav">
           {NAV.map(item => (
-            <div key={item.view} className={item.mobile ? 'nav-wrap' : 'nav-wrap desktop-only'}>
+            <div key={item.view} className={wrapClass(item)}>
               {item.group && <div className="nav-group desktop-only">{item.group}</div>}
               <button
-                className={`nav-item ${active === item.view ? 'active' : ''}`}
+                className={`nav-item ${isActive(item.view) ? 'active' : ''}`}
                 style={{ '--nav': item.color }}
                 onClick={() => go(item.view)}
               >

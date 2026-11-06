@@ -37,6 +37,7 @@ const LearningPath = lazy(() => import('./LearningPath'))
 const LoginIntro = lazy(() => import('./LoginIntro'))
 const Dictation = lazy(() => import('./Dictation'))
 const Games = lazy(() => import('./Games'))
+const Practice = lazy(() => import('./Practice'))
 
 // Her sayfanın bölüm rengi (başlık ve üstteki renkli parıltı bu renkte olur)
 const SECTION_COLOR = {
@@ -46,7 +47,8 @@ const SECTION_COLOR = {
   games: '#f97316', sentence: '#ec4899', dictation: '#a855f7',
   library: '#7c3aed', reader: '#7c3aed', search: '#0ea5e9', themes: '#22c55e',
   badges: '#eab308', notebook: '#d97706', stats: '#6366f1',
-  phonetics: '#64748b', settings: '#64748b'
+  phonetics: '#64748b', settings: '#64748b',
+  practice: '#f97316'
 }
 
 function App() {
@@ -218,6 +220,7 @@ function App() {
             {view === 'sentence' && <SentencePractice onExit={goHome} />}
             {view === 'dictation' && <Dictation onExit={goHome} />}
             {view === 'games' && <Games />}
+            {view === 'practice' && <Practice onNavigate={navigate} />}
             {view === 'badges' && <Badges />}
             {view === 'path' && (
               <LearningPath
